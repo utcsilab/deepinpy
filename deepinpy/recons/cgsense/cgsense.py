@@ -16,11 +16,12 @@ import pytorch_lightning as pl
 
 class CGSense(pl.LightningModule):
 
-    def __init__(self, l2lam):
+    def __init__(self, l2lam, step=.0005):
         super(CGSense, self).__init__()
         self.l2lam = torch.nn.Parameter(torch.tensor(l2lam))
         self._build_data()
         self.loss_fun = torch.nn.MSELoss(reduction='sum')
+        self.step = step
 
     def _build_data(self):
         self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=0.001, num_data_sets=100, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=False)
@@ -37,6 +38,7 @@ class CGSense(pl.LightningModule):
         maps = data['maps']
         masks = data['masks']
         inp = data['out']
+
         #self._build_MCMRI(maps, masks)
         #print(idx, data)
 
@@ -55,7 +57,7 @@ class CGSense(pl.LightningModule):
                 }
 
     def configure_optimizers(self):
-        return [torch.optim.Adam(self.parameters(), lr=.0005)]
+        return [torch.optim.Adam(self.parameters(), lr=self.step)]
 
     @pl.data_loader
     def train_dataloader(self):
