@@ -46,11 +46,12 @@ class CGSense(pl.LightningModule):
 
         x_adj = A.adjoint(inp)
         x_hat = self.forward(x_adj, A)
-        #cfl.writecfl('x_hat', utils.t2n(x_hat))
-        #cfl.writecfl('x_gt', utils.t2n(imgs))
-        #cfl.writecfl('masks', utils.t2n2(masks))
-        #cfl.writecfl('maps', utils.t2n(maps))
-        #cfl.writecfl('ksp', utils.t2n(inp))
+        if batch_nb == 0:
+            cfl.writecfl('x_hat', utils.t2n(x_hat))
+            cfl.writecfl('x_gt', utils.t2n(imgs))
+            cfl.writecfl('masks', utils.t2n2(masks))
+            cfl.writecfl('maps', utils.t2n(maps))
+            cfl.writecfl('ksp', utils.t2n(inp))
         return {
                 'loss': self.loss_fun(x_hat, imgs),
                 'progress': {'lambda': self.l2lam.clone().detach().requires_grad_(False)},
