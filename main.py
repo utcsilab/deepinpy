@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import torch
-import torch.nn
-import torch.utils.data
-
-from torchvision.datasets import MNIST
-import torchvision.transforms as transforms
 
 import pytorch_lightning as pl
 import test_tube

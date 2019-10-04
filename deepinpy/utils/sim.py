@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import time
 
-import sigpy.mri.samp
-import torch
+#import sigpy.mri.samp
 import torch.utils.data
 import numpy as np
 import scipy.fftpack
