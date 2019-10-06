@@ -28,13 +28,21 @@ def main_train(hparams, gpu_ids=None):
 
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'
-    description_str = 'modl-based optimization'
+    description_str = 'deep inverse problems optimization'
 
     parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='random_search')
 
+    parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
+    parser.add_argument('--solver', action='store', dest='solver', type=str, help='optimizer/solver ("adam", "sgd")', default="sgd")
+    parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=1)
     parser.add_argument('--num_unrolls', action='store', dest='num_unrolls', type=int, help='number of unrolls', default=4)
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, low=.0001, high=.1)
+    parser.add_argument('--gpu', action='store', dest='gpu', type=int, help='gpu number', default=0)
+    parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
+    parser.add_argument('--max_cg', action='store', dest='max_cg', type=int, help='max number of conjgrad iterations', default=10)
+    parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
     parser.add_argument('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, help='initial l2 regularization')
+    parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
 
     hparams = parser.parse_args()
 
