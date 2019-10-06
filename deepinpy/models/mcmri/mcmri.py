@@ -8,8 +8,6 @@ import sys
 
 import deepinpy.utils.complex as cp
 
-import pytorch_lightning as pl
-
 class MultiChannelMRI(torch.nn.Module):
     def __init__(self, maps, mask, l2lam=False):
         super(MultiChannelMRI, self).__init__()

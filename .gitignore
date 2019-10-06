@@ -2,3 +2,7 @@
 __pycache__
 default
 tags
+*.cfl
+*.hdr
+logs
+data
