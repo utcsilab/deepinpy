@@ -18,18 +18,15 @@ import torchvision.utils
 
 import pytorch_lightning as pl
 
-class MoDLRecon(pl.LightningModule):
+class ResNetRecon(pl.LightningModule):
 
-    def __init__(self, l2lam, step=.0005, num_unrolls=4, solver='sgd', max_cg=10):
-        super(MoDLRecon, self).__init__()
-        self.l2lam = torch.nn.Parameter(torch.tensor(l2lam))
+    def __init__(self, step=.0005, solver='sgd'):
+        super(ResNetRecon, self).__init__()
         self._build_data()
         self.loss_fun = torch.nn.MSELoss(reduction='sum')
         self.step = step
-        self.num_unrolls = num_unrolls
         self.solver = solver
         self.denoiser = ResNet5Block()
-        self.max_cg = max_cg
 
     def _build_data(self):
         self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=0.001, num_data_sets=100, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=False)
@@ -37,15 +34,8 @@ class MoDLRecon(pl.LightningModule):
     def _build_MCMRI(self, maps, masks):
         return MultiChannelMRI(maps, masks, 0.)
 
-    def forward(self, x_adj, A):
-
-        num_cg = np.zeros((self.num_unrolls,))
-        x = x_adj
-        for i in range(self.num_unrolls):
-            r = self.denoiser(x)
-            x, n_cg = deepinpy.opt.conjgrad.conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.max_cg, l2lam=self.l2lam)
-            num_cg[i] = n_cg
-        return x, num_cg
+    def forward(self, x_adj):
+        return self.denoiser(x_adj)
 
     def training_step(self, batch, batch_nb):
         idx, data = batch
@@ -58,7 +48,7 @@ class MoDLRecon(pl.LightningModule):
         A = self._build_MCMRI(maps, masks)
 
         x_adj = A.adjoint(inp)
-        x_hat, num_cg = self.forward(x_adj, A)
+        x_hat = self.forward(x_adj)
         #if 0 in idx:
         if idx == 0:
             #_idx = idx.index(0)
@@ -76,17 +66,14 @@ class MoDLRecon(pl.LightningModule):
         loss = self.loss_fun(x_hat, imgs)
 
         _loss = loss.clone().detach().requires_grad_(False)
-        _lambda = self.l2lam.clone().detach().requires_grad_(False)
         _epoch = self.current_epoch
         _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt()
 
         if self.logger:
             self.logger.log_metrics({
-                'lambda': _lambda,
                 'loss': _loss,
                 'epoch': self.current_epoch,
                 'nrmse': _nrmse, 
-                'max_num_cg': np.max(num_cg), 
                 })
         return {
                 'loss': loss

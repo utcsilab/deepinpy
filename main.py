@@ -9,8 +9,9 @@ import os
 import argparse
 
 #from deepinpy.models.mcmri import mcmri
-from deepinpy.recons.cgsense.cgsense import CGSense
-from deepinpy.recons.modl.modl import MoDL
+from deepinpy.recons.cgsense.cgsense import CGSenseRecon
+from deepinpy.recons.modl.modl import MoDLRecon
+from deepinpy.recons.resnet.resnet import ResNetRecon
 
 #torch.backends.cudnn.enabled = True
 
@@ -20,13 +21,17 @@ def main_train(args, gpu_ids=None):
     tt_logger = TestTubeLogger(save_dir="./logs", name=args.name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
 
-    #M = CGSense(l2lam=args.l2lam_init, step=args.step)
-    M = MoDL(l2lam=args.l2lam_init, step=args.step, num_unrolls=args.num_unrolls)
+    if args.recon == 'cgsense':
+        M = CGSenseRecon(l2lam=args.l2lam_init, step=args.step, solver=args.solver, max_cg=args.max_cg)
+    elif args.recon == 'modl':
+        M = MoDLRecon(l2lam=args.l2lam_init, step=args.step, num_unrolls=args.num_unrolls, solver=args.solver, max_cg=args.max_cg)
+    elif args.recon == 'resnet':
+        M = ResNetRecon(step=args.step, solver=args.solver)
 
     #trainer = Trainer(experiment=exp, max_nb_epochs=1, train_percent_check=.1)
     #trainer = Trainer(experiment=exp, max_nb_epochs=100, gpus=[2, 3], distributed_backend='dp')
     print('gpu ids are', gpu_ids)
-    trainer = Trainer(max_nb_epochs=100, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs')
+    trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs')
     #trainer = Trainer(experiment=exp, max_nb_epochs=10)
 
     trainer.fit(M)
