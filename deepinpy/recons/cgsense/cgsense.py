@@ -45,7 +45,7 @@ class CGSense(pl.LightningModule):
         A = self._build_MCMRI(maps, masks)
 
         x_adj = A.adjoint(inp)
-        x_hat = self.forward(x_adj, A)
+        x_hat, num_cg = self.forward(x_adj, A)
         if batch_nb == 0:
             cfl.writecfl('x_hat', utils.t2n(x_hat))
             cfl.writecfl('x_gt', utils.t2n(imgs))

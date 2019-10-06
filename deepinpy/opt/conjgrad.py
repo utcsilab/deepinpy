@@ -29,6 +29,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
 
     reshape = (-1,) + (1,) * (len(x.shape) - 1)
 
+    num_iter = 0
     for i in range(max_iter):
 
         if verbose:
@@ -57,9 +58,10 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         rsold = rsnew
 
         p = beta * p + r
+        num_iter += 1
 
 
     if verbose:
         print('FINAL: {rsnew}'.format(rsnew=torch.sqrt(rsnew)))
 
-    return x
+    return x, num_iter

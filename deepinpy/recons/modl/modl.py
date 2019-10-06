@@ -37,7 +37,7 @@ class MoDL(pl.LightningModule):
         x = x_adj
         for i in range(self.num_unrolls):
             r = self.denoiser(x)
-            x = deepinpy.opt.conjgrad.conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=10, l2lam=self.l2lam)
+            x, n_cg = deepinpy.opt.conjgrad.conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.max_cg, l2lam=self.l2lam)
         return x
 
     def training_step(self, batch, batch_nb):
