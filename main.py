@@ -13,7 +13,10 @@ from deepinpy.recons.cgsense.cgsense import CGSenseRecon
 from deepinpy.recons.modl.modl import MoDLRecon
 from deepinpy.recons.resnet.resnet import ResNetRecon
 
-#torch.backends.cudnn.enabled = True
+import torch
+torch.backends.cudnn.enabled = True
+
+import numpy.random
 
 def main_train(args, gpu_ids=None):
     #print(args)
@@ -58,4 +61,6 @@ if __name__ == '__main__':
 
     #args.optimize_parallel_gpu(main_train, gpu_ids=['2', '3'], max_nb_trials=10)
     #args.optimize_parallel_cpu(main_train, nb_trials=20, nb_workers=2)
+    torch.manual_seed(args.random_seed)
+    numpy.random.seed(args.random_seed)
     main_train(args, gpu_ids=[args.gpu])
