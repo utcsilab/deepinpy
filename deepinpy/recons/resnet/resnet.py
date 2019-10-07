@@ -78,14 +78,15 @@ class ResNetRecon(pl.LightningModule):
         _epoch = self.current_epoch
         _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt().mean().detach().requires_grad_(False)
 
-        if self.logger:
-            self.logger.log_metrics({
+        log_dict = {
                 'loss': _loss,
                 'epoch': self.current_epoch,
                 'nrmse': _nrmse, 
-                })
+                }
         return {
-                'loss': loss
+                'loss': loss,
+                'log': log_dict,
+                'progress_bar': log_dict,
                 }
 
     def configure_optimizers(self):

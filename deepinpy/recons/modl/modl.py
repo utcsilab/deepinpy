@@ -90,16 +90,18 @@ class MoDLRecon(pl.LightningModule):
         _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt().mean().detach().requires_grad_(False)
         _num_cg = np.max(num_cg)
 
-        if self.logger:
-            self.logger.log_metrics({
+        log_dict = {
                 'lambda': _lambda,
                 'loss': _loss,
                 'epoch': _epoch,
                 'nrmse': _nrmse, 
                 'max_num_cg': _num_cg,
-                })
+                }
+
         return {
-                'loss': loss
+                'loss': loss,
+                'log': log_dict,
+                'progress_bar': log_dict,
                 }
 
     def configure_optimizers(self):
