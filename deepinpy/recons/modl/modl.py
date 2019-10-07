@@ -13,6 +13,7 @@ from deepinpy.opt import opt
 from deepinpy.utils import sim
 from deepinpy.models.mcmri.mcmri import MultiChannelMRI
 from deepinpy.models.resnet.resnet import ResNet5Block
+from deepinpy.models.resnet.resnet import ResNet
 
 import torchvision.utils
 
@@ -20,7 +21,7 @@ import pytorch_lightning as pl
 
 class MoDLRecon(pl.LightningModule):
 
-    def __init__(self, l2lam, step=.0005, num_unrolls=4, solver='sgd', max_cg=10):
+    def __init__(self, l2lam, step=.0005, num_unrolls=4, solver='sgd', max_cg=10, denoiser_str='ResNet5Block'):
         super(MoDLRecon, self).__init__()
         self.l2lam = torch.nn.Parameter(torch.tensor(l2lam))
         self._build_data()
@@ -28,7 +29,10 @@ class MoDLRecon(pl.LightningModule):
         self.step = step
         self.num_unrolls = num_unrolls
         self.solver = solver
-        self.denoiser = ResNet5Block()
+        if denoiser_str == 'ResNet5Block':
+            self.denoiser = ResNet5Block(num_filters=64, filter_size=7, batch_norm=False)
+        elif denoiser_str == 'ResNet':
+            self.denoiser = ResNet(latent_channels=64, num_blocks=3, kernel_size=7, batch_norm=False)
         self.max_cg = max_cg
 
     def _build_data(self):
@@ -59,10 +63,8 @@ class MoDLRecon(pl.LightningModule):
 
         x_adj = A.adjoint(inp)
         x_hat, num_cg = self.forward(x_adj, A)
-        #if 0 in idx:
-        if idx == 0:
-            #_idx = idx.index(0)
-            _idx = 0
+        if 0 in idx:
+            _idx = idx.index(0)
             cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
             cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
             cfl.writecfl('masks', utils.t2n2(masks[_idx,...]))
@@ -78,15 +80,16 @@ class MoDLRecon(pl.LightningModule):
         _loss = loss.clone().detach().requires_grad_(False)
         _lambda = self.l2lam.clone().detach().requires_grad_(False)
         _epoch = self.current_epoch
-        _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt()
+        _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt().mean().detach().requires_grad_(False)
+        _num_cg = np.max(num_cg)
 
         if self.logger:
             self.logger.log_metrics({
                 'lambda': _lambda,
                 'loss': _loss,
-                'epoch': self.current_epoch,
+                'epoch': _epoch,
                 'nrmse': _nrmse, 
-                'max_num_cg': np.max(num_cg), 
+                'max_num_cg': _num_cg,
                 })
         return {
                 'loss': loss

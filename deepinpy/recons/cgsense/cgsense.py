@@ -40,6 +40,7 @@ class CGSenseRecon(pl.LightningModule):
 
     def training_step(self, batch, batch_nb):
         idx, data = batch
+        idx = utils.itemize(idx)
         imgs = data['imgs']
         maps = data['maps']
         masks = data['masks']
@@ -49,9 +50,8 @@ class CGSenseRecon(pl.LightningModule):
 
         x_adj = A.adjoint(inp)
         x_hat, num_cg = self.forward(x_adj, A)
-        if idx == 0:
-            #_idx = idx.index(0)
-            _idx = 0
+        if 0 in idx:
+            _idx = idx.index(0)
             cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
             cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
             cfl.writecfl('masks', utils.t2n2(masks[_idx,...]))
@@ -66,7 +66,7 @@ class CGSenseRecon(pl.LightningModule):
         _loss = loss.clone().detach().requires_grad_(False)
         _lambda = self.l2lam.clone().detach().requires_grad_(False)
         _epoch = self.current_epoch
-        _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt()
+        _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt().mean().detach().requires_grad_(False)
 
         if self.logger:
             self.logger.log_metrics({
