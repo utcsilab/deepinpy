@@ -12,8 +12,7 @@ import deepinpy.opt.conjgrad
 from deepinpy.opt import opt
 from deepinpy.utils import sim
 from deepinpy.models.mcmri.mcmri import MultiChannelMRI
-from deepinpy.models.resnet.resnet import ResNet5Block
-from deepinpy.models.resnet.resnet import ResNet
+from deepinpy.models.resnet.resnet import ResNet5Block, ResNet
 
 import torchvision.utils
 
@@ -21,22 +20,30 @@ import pytorch_lightning as pl
 
 class MoDLRecon(pl.LightningModule):
 
-    def __init__(self, l2lam, step=.0005, num_unrolls=4, solver='sgd', max_cg=10, denoiser_str='ResNet5Block'):
+    def __init__(self, args):
         super(MoDLRecon, self).__init__()
-        self.l2lam = torch.nn.Parameter(torch.tensor(l2lam))
-        self._build_data()
+        self.l2lam = torch.nn.Parameter(torch.tensor(args.l2lam_init))
         self.loss_fun = torch.nn.MSELoss(reduction='sum')
-        self.step = step
-        self.num_unrolls = num_unrolls
-        self.solver = solver
-        if denoiser_str == 'ResNet5Block':
-            self.denoiser = ResNet5Block(num_filters=64, filter_size=7, batch_norm=False)
-        elif denoiser_str == 'ResNet':
-            self.denoiser = ResNet(latent_channels=64, num_blocks=3, kernel_size=7, batch_norm=False)
-        self.max_cg = max_cg
+        self.step = args.step
+        self.num_unrolls = args.num_unrolls
+        self.solver = args.solver
+        self.stdev = args.stdev
+        self.num_data_sets = args.num_data_sets
+        self.fully_sampled = args.fully_sampled
+        self.max_cg = args.max_cg
+        self.batch_size = args.batch_size
+        self.num_workers = args.num_workers
+        self.shuffle = args.shuffle
+
+        self._build_data()
+
+        if args.network == 'ResNet5Block':
+            self.denoiser = ResNet5Block(num_filters=args.latent_channels, filter_size=7, batch_norm=args.batch_norm)
+        elif args.network == 'ResNet':
+            self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
     def _build_data(self):
-        self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=0.001, num_data_sets=100, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=False)
+        self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=False)
 
     def _build_MCMRI(self, maps, masks):
         return MultiChannelMRI(maps, masks, 0.)
@@ -103,4 +110,4 @@ class MoDLRecon(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.D, batch_size=3, shuffle=True, num_workers=16, drop_last=True)
+        return torch.utils.data.DataLoader(self.D, batch_size=self.batch_size, shuffle=self.shuffle, num_workers=self.num_workers, drop_last=True)

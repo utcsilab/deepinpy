@@ -27,7 +27,7 @@ def main_train(args, gpu_ids=None):
     if args.recon == 'cgsense':
         M = CGSenseRecon(l2lam=args.l2lam_init, step=args.step, solver=args.solver, max_cg=args.max_cg)
     elif args.recon == 'modl':
-        M = MoDLRecon(l2lam=args.l2lam_init, step=args.step, num_unrolls=args.num_unrolls, solver=args.solver, max_cg=args.max_cg)
+        M = MoDLRecon(args)
     elif args.recon == 'resnet':
         M = ResNetRecon(step=args.step, solver=args.solver)
 
@@ -45,17 +45,35 @@ if __name__ == '__main__':
 
     parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='random_search')
 
-    parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
-    parser.add_argument('--solver', action='store', dest='solver', type=str, help='optimizer/solver ("adam", "sgd")', default="sgd")
-    parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=1)
-    parser.add_argument('--num_unrolls', action='store', dest='num_unrolls', type=int, help='number of unrolls', default=4)
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, low=.0001, high=.1)
+    parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=True, low=.0001, high=100, help='initial l2 regularization')
+    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=True, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="sgd")
+    parser.opt_range('--max_cg', action='store', dest='max_cg', type=int, tunable=True, low=1, high=20, help='max number of conjgrad iterations', default=10)
+    parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=True, low=1, high=20, help='batch size', default=2)
+    parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=True, low=1, high=10, nb_samples=1, help='number of unrolls', default=4)
+    parser.opt_list('--network', action='store', dest='network', type=str, tunable=True, options=['ResNet', 'ResNet5Block'], help='which denoiser network to use', default='ResNet')
+    parser.opt_list('--latent_channels', action='store', dest='latent_channels', type=int, tunable=True, options=[16, 32, 64, 128], help='number of latent channels', default=64)
+    parser.opt_range('--num_blocks', action='store', dest='num_blocks', type=int, tunable=True, low=1, high=4, nb_samples=3, help='number of ResNetBlocks', default=3)
+    parser.opt_range('--dropout', action='store', dest='dropout', type=float, tunable=True, low=0., high=.5, help='dropout fraction', default=0.)
+    parser.opt_list('--batch_norm', action='store_true', dest='batch_norm', tunable=True, options=[True, False], help='batch normalization', default=False)
+
+    parser.add_argument('--num_accumulate', action='store', dest='num_accumulate', type=int, help='nunumber of batch accumulations', default=1)
+    parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
+    parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=1)
     parser.add_argument('--gpu', action='store', dest='gpu', type=int, help='gpu number', default=0)
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
-    parser.add_argument('--max_cg', action='store', dest='max_cg', type=int, help='max number of conjgrad iterations', default=10)
     parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
-    parser.add_argument('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, help='initial l2 regularization')
     parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
+    parser.add_argument('--data_file', action='store', dest='data_file', type=str, help='data.h5', default=None)
+    parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='data.h5', default=None)
+    parser.add_argument('--num_data_sets', action='store', dest='num_data_sets', type=int, help='number of data sets to use', default=None)
+    parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=1)
+    parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
+    parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip gradients to [-val, +val]', default=False)
+    parser.add_argument('--stdev', action='store', type=float, dest='stdev', help='complex valued noise standard deviation', default=.01)
+    parser.add_argument('--max_norm_constraint', action='store', type=float, dest='max_norm_constraint', help='norm constraint on weights', default=None)
+    parser.add_argument('--fully_sampled', action='store_true', dest='fully_sampled', help='fully_sampled', default=False)
+    parser.add_argument('--adam_eps', action='store', type=float, dest='adam_eps', help='adam epsilon', default=1e-8)
 
     args = parser.parse_args()
 
