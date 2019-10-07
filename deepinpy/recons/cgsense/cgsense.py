@@ -19,24 +19,30 @@ import torchvision.utils
 
 class CGSenseRecon(pl.LightningModule):
 
-    def __init__(self, l2lam, step=.0005, max_cg=30, eps=1e-5, solver='sgd'):
+    def __init__(self, args):
         super(CGSenseRecon, self).__init__()
-        self.l2lam = torch.nn.Parameter(torch.tensor(l2lam))
-        self._build_data()
+        self.l2lam = torch.nn.Parameter(torch.tensor(args.l2lam_init))
         self.loss_fun = torch.nn.MSELoss(reduction='sum')
-        self.step = step
-        self.max_cg = max_cg
-        self.eps = eps
-        self.solver=solver
+        self.step = args.step
+        self.stdev = args.stdev
+        self.num_data_sets = args.num_data_sets
+        self.fully_sampled = args.fully_sampled
+        self.batch_size = args.batch_size
+        self.num_workers = args.num_workers
+        self.shuffle = args.shuffle
+        self.cg_max_iter = args.cg_max_iter
+        self.eps = args.cg_eps
+        self.solver=args.solver
+        self._build_data()
 
     def _build_data(self):
-        self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=0.001, num_data_sets=100, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=False)
+        self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=False)
 
     def _build_MCMRI(self, maps, masks):
         return MultiChannelMRI(maps, masks, self.l2lam)
 
     def forward(self, x_adj, A):
-        return deepinpy.opt.conjgrad.conjgrad(x_adj, x_adj, A.normal, l2lam=0., verbose=False, eps=self.eps, max_iter=self.max_cg)
+        return deepinpy.opt.conjgrad.conjgrad(x_adj, x_adj, A.normal, l2lam=0., verbose=False, eps=self.eps, max_iter=self.cg_max_iter)
 
     def training_step(self, batch, batch_nb):
         idx, data = batch
@@ -89,4 +95,4 @@ class CGSenseRecon(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.D, batch_size=3, shuffle=True, num_workers=16, drop_last=True)
+        return torch.utils.data.DataLoader(self.D, batch_size=self.batch_size, shuffle=self.shuffle, num_workers=self.num_workers, drop_last=True)

@@ -30,7 +30,7 @@ class MoDLRecon(pl.LightningModule):
         self.stdev = args.stdev
         self.num_data_sets = args.num_data_sets
         self.fully_sampled = args.fully_sampled
-        self.max_cg = args.max_cg
+        self.cg_max_iter = args.cg_max_iter
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
         self.shuffle = args.shuffle
@@ -54,7 +54,7 @@ class MoDLRecon(pl.LightningModule):
         x = x_adj
         for i in range(self.num_unrolls):
             r = self.denoiser(x)
-            x, n_cg = deepinpy.opt.conjgrad.conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.max_cg, l2lam=self.l2lam)
+            x, n_cg = deepinpy.opt.conjgrad.conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.cg_max_iter, l2lam=self.l2lam)
             num_cg[i] = n_cg
         return x, num_cg
 

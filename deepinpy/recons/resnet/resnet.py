@@ -12,7 +12,7 @@ import deepinpy.opt.conjgrad
 from deepinpy.opt import opt
 from deepinpy.utils import sim
 from deepinpy.models.mcmri.mcmri import MultiChannelMRI
-from deepinpy.models.resnet.resnet import ResNet5Block
+from deepinpy.models.resnet.resnet import ResNet5Block, ResNet
 
 import torchvision.utils
 
@@ -20,16 +20,27 @@ import pytorch_lightning as pl
 
 class ResNetRecon(pl.LightningModule):
 
-    def __init__(self, step=.0005, solver='sgd'):
+    def __init__(self, args):
         super(ResNetRecon, self).__init__()
-        self._build_data()
         self.loss_fun = torch.nn.MSELoss(reduction='sum')
-        self.step = step
-        self.solver = solver
-        self.denoiser = ResNet5Block()
+        self.step = args.step
+        self.solver = args.solver
+        self.stdev = args.stdev
+        self.num_data_sets = args.num_data_sets
+        self.fully_sampled = args.fully_sampled
+        self.batch_size = args.batch_size
+        self.num_workers = args.num_workers
+        self.shuffle = args.shuffle
+
+        self._build_data()
+
+        if args.network == 'ResNet5Block':
+            self.denoiser = ResNet5Block(num_filters=args.latent_channels, filter_size=7, batch_norm=args.batch_norm)
+        elif args.network == 'ResNet':
+            self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
     def _build_data(self):
-        self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=0.001, num_data_sets=100, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=False)
+        self.D = sim.Dataset(data_file="/home/jtamir/projects/deepinpy_git/data/dataset_train.h5", stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=False)
 
     def _build_MCMRI(self, maps, masks):
         return MultiChannelMRI(maps, masks, 0.)
@@ -85,4 +96,4 @@ class ResNetRecon(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.D, batch_size=3, shuffle=True, num_workers=16, drop_last=True)
+        return torch.utils.data.DataLoader(self.D, batch_size=self.batch_size, shuffle=self.shuffle, num_workers=self.num_workers, drop_last=True)

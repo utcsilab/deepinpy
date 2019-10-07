@@ -25,11 +25,11 @@ def main_train(args, gpu_ids=None):
     tt_logger.log_hyperparams(args)
 
     if args.recon == 'cgsense':
-        M = CGSenseRecon(l2lam=args.l2lam_init, step=args.step, solver=args.solver, max_cg=args.max_cg)
+        M = CGSenseRecon(args)
     elif args.recon == 'modl':
         M = MoDLRecon(args)
     elif args.recon == 'resnet':
-        M = ResNetRecon(step=args.step, solver=args.solver)
+        M = ResNetRecon(args)
 
     #trainer = Trainer(experiment=exp, max_nb_epochs=1, train_percent_check=.1)
     #trainer = Trainer(experiment=exp, max_nb_epochs=100, gpus=[2, 3], distributed_backend='dp')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, low=.0001, high=.1)
     parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=True, low=.0001, high=100, help='initial l2 regularization')
     parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=True, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="sgd")
-    parser.opt_range('--max_cg', action='store', dest='max_cg', type=int, tunable=True, low=1, high=20, help='max number of conjgrad iterations', default=10)
+    parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=True, low=1, high=20, help='max number of conjgrad iterations', default=10)
     parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=True, low=1, high=20, help='batch size', default=2)
     parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=True, low=1, high=10, nb_samples=1, help='number of unrolls', default=4)
     parser.opt_list('--network', action='store', dest='network', type=str, tunable=True, options=['ResNet', 'ResNet5Block'], help='which denoiser network to use', default='ResNet')
@@ -70,6 +70,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=1)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
     parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip gradients to [-val, +val]', default=False)
+    parser.add_argument('--cg_eps', action='store', type=float, dest='cg_eps', help='conjgrad eps', default=1e-4)
     parser.add_argument('--stdev', action='store', type=float, dest='stdev', help='complex valued noise standard deviation', default=.01)
     parser.add_argument('--max_norm_constraint', action='store', type=float, dest='max_norm_constraint', help='norm constraint on weights', default=None)
     parser.add_argument('--fully_sampled', action='store_true', dest='fully_sampled', help='fully_sampled', default=False)
