@@ -28,8 +28,9 @@ class MoDLRecon(Recon):
         elif args.network == 'ResNet':
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
-    def forward(self, x_adj, A):
+    def forward(self, y, A):
         num_cg = np.zeros((self.num_unrolls,))
+        x_adj = A.adjoint(y)
         x = x_adj
         for i in range(self.num_unrolls):
             r = self.denoiser(x)

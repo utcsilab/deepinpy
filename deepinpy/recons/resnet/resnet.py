@@ -28,5 +28,6 @@ class ResNetRecon(Recon):
         elif args.network == 'ResNet':
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
-    def forward(self, x_adj, A=None):
+    def forward(self, y, A):
+        x_adj = A.adjoint(y)
         return self.denoiser(x_adj), 0

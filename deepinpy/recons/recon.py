@@ -3,9 +3,10 @@
 
 import numpy as np
 import torch
-#import torch.nn.functional
 import cfl
 import sys
+
+import pytorch_lightning as pl
 
 from deepinpy.utils import utils
 import deepinpy.utils.complex as cp
@@ -14,7 +15,6 @@ from deepinpy.utils import sim
 from deepinpy.opt import opt
 from deepinpy.models.mcmri.mcmri import MultiChannelMRI
 
-import pytorch_lightning as pl
 
 import torchvision.utils
 
@@ -59,7 +59,7 @@ class Recon(pl.LightningModule):
         A = self._build_MCMRI(maps, masks)
 
         x_adj = A.adjoint(inp)
-        x_hat, num_cg = self.forward(x_adj, A)
+        x_hat, num_cg = self.forward(inp, A)
         if self.batch_size == 1 and idx == 0:
                 _idx = 0
         elif self.batch_size > 1 and 0 in idx:
