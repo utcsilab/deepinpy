@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+
 from test_tube import Experiment, HyperOptArgumentParser
 from pytorch_lightning import Trainer
 from pytorch_lightning.logging import TestTubeLogger
-
 
 import os
 import argparse
@@ -12,6 +12,7 @@ import argparse
 from deepinpy.recons.cgsense.cgsense import CGSenseRecon
 from deepinpy.recons.modl.modl import MoDLRecon
 from deepinpy.recons.resnet.resnet import ResNetRecon
+from deepinpy.recons.dbp.dbp import DeepBasisPursuitRecon
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -30,6 +31,8 @@ def main_train(args, gpu_ids=None):
         M = MoDLRecon(args)
     elif args.recon == 'resnet':
         M = ResNetRecon(args)
+    elif args.recon == 'dbp':
+        M = DeepBasisPursuitRecon(args)
 
     #trainer = Trainer(experiment=exp, max_nb_epochs=1, train_percent_check=.1)
     #trainer = Trainer(experiment=exp, max_nb_epochs=100, gpus=[2, 3], distributed_backend='dp')
@@ -51,6 +54,7 @@ if __name__ == '__main__':
     parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=True, low=1, high=20, help='max number of conjgrad iterations', default=10)
     parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=True, low=1, high=20, help='batch size', default=2)
     parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=True, low=1, high=10, nb_samples=1, help='number of unrolls', default=4)
+    parser.opt_range('--num_admm', action='store', dest='num_admm', type=int, tunable=True, low=1, high=10, nb_samples=4, help='number of ADMM iterations', default=3)
     parser.opt_list('--network', action='store', dest='network', type=str, tunable=True, options=['ResNet', 'ResNet5Block'], help='which denoiser network to use', default='ResNet')
     parser.opt_list('--latent_channels', action='store', dest='latent_channels', type=int, tunable=True, options=[16, 32, 64, 128], help='number of latent channels', default=64)
     parser.opt_range('--num_blocks', action='store', dest='num_blocks', type=int, tunable=True, low=1, high=4, nb_samples=3, help='number of ResNetBlocks', default=3)
