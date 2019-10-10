@@ -60,9 +60,10 @@ class Recon(pl.LightningModule):
 
         x_adj = A.adjoint(inp)
         x_hat, num_cg = self.forward(inp, A)
-        if self.batch_size == 1 and idx == 0:
+        _b = inp.shape[0]
+        if _b == 1 and idx == 0:
                 _idx = 0
-        elif self.batch_size > 1 and 0 in idx:
+        elif _b > 1 and 0 in idx:
             _idx = idx.index(0)
         else:
             _idx = None

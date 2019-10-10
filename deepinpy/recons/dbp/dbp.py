@@ -22,7 +22,7 @@ class DeepBasisPursuitRecon(Recon):
 
     def __init__(self, args):
         super(DeepBasisPursuitRecon, self).__init__(args)
-        self.rho = torch.nn.Parameter(torch.tensor(args.l2lam_init))
+        self.l2lam = torch.nn.Parameter(torch.tensor(args.l2lam_init))
         self.num_admm = args.num_admm
 
         if args.network == 'ResNet5Block':
@@ -49,8 +49,8 @@ class DeepBasisPursuitRecon(Recon):
 
             for j in range(self.num_admm):
 
-                rhs = self.rho * A.adjoint(z - u) + r
-                fun = lambda xx: self.rho * A.normal(xx) + xx
+                rhs = self.l2lam * A.adjoint(z - u) + r
+                fun = lambda xx: self.l2lam * A.normal(xx) + xx
                 x, n_cg = deepinpy.opt.conjgrad.conjgrad(x, rhs, fun, verbose=False, eps=1e-5, max_iter=self.cg_max_iter)
                 num_cg[i, j] = n_cg
 
@@ -62,7 +62,7 @@ class DeepBasisPursuitRecon(Recon):
                 # check ADMM convergence
                 Ax = A(x)
                 r_norm = opt.ip_batch(Ax-z).sqrt()
-                s_norm = opt.ip_batch(self.rho * A.adjoint(z - z_old)).sqrt()
+                s_norm = opt.ip_batch(self.l2lam * A.adjoint(z - z_old)).sqrt()
                 if (r_norm + s_norm).max() < 1E-2:
                     if self.debug_level > 0:
                         tqdm.tqdm.write('stopping early, a={}'.format(a))
