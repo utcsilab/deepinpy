@@ -2,7 +2,6 @@
 
 import torch
 import numpy as np
-import sys
 
 
 def dot(x1, x2):

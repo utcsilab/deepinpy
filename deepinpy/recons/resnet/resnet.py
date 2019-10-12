@@ -1,22 +1,8 @@
 #!/usr/bin/env python
 
-import numpy as np
-import torch
-#import torch.nn.functional
-import cfl
-import sys
-
-from deepinpy.utils import utils
-import deepinpy.utils.complex as cp
-import deepinpy.opt.conjgrad
-from deepinpy.opt import opt
-from deepinpy.utils import sim
-from deepinpy.models.mcmri.mcmri import MultiChannelMRI
-from deepinpy.models.resnet.resnet import ResNet5Block, ResNet
-from deepinpy.recons.recon import Recon
-
-import torchvision.utils
-
+from deepinpy.forwards import MultiChannelMRI
+from deepinpy.models import ResNet5Block, ResNet
+from deepinpy.recons import Recon
 
 class ResNetRecon(Recon):
 

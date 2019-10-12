@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 
-import numpy as np
 import torch
-#import torch.nn.functional
-import cfl
-import sys
 
-import deepinpy.utils.complex as cp
-import deepinpy.utils.utils as utils
+from deepinpy.utils import utils
 
 
 class Conv2dSame(torch.nn.Module):

@@ -2,20 +2,11 @@
 
 import numpy as np
 import torch
-#import torch.nn.functional
-import cfl
-import sys
 
 from deepinpy.utils import utils
-import deepinpy.utils.complex as cp
-import deepinpy.opt.conjgrad
-from deepinpy.opt import opt
-from deepinpy.utils import sim
-from deepinpy.models.mcmri.mcmri import MultiChannelMRI
-from deepinpy.models.resnet.resnet import ResNet5Block, ResNet
-from deepinpy.recons.recon import Recon
-
-import torchvision.utils
+from deepinpy.opt import conjgrad
+from deepinpy.models import ResNet5Block, ResNet
+from deepinpy.recons import Recon
 
 class MoDLRecon(Recon):
 
@@ -34,6 +25,6 @@ class MoDLRecon(Recon):
         x = x_adj
         for i in range(self.num_unrolls):
             r = self.denoiser(x)
-            x, n_cg = deepinpy.opt.conjgrad.conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.cg_max_iter, l2lam=self.l2lam)
+            x, n_cg = conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.cg_max_iter, l2lam=self.l2lam)
             num_cg[i] = n_cg
         return x, num_cg

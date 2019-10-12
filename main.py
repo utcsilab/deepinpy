@@ -9,10 +9,7 @@ import os
 import argparse
 
 #from deepinpy.models.mcmri import mcmri
-from deepinpy.recons.cgsense.cgsense import CGSenseRecon
-from deepinpy.recons.modl.modl import MoDLRecon
-from deepinpy.recons.resnet.resnet import ResNetRecon
-from deepinpy.recons.dbp.dbp import DeepBasisPursuitRecon
+from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
 
 import torch
 torch.backends.cudnn.enabled = True

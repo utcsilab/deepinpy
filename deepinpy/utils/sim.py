@@ -14,8 +14,6 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-from bart import bart
-
 import deepinpy.utils.complex as cp
 
 '''
@@ -227,14 +225,12 @@ class Dataset(torch.utils.data.Dataset):
         else:
             # N, nc, nx, ny
             noise = np.random.randn(*maps.shape) + 1j * np.random.randn(*maps.shape)
-            #out = masks[:,None,:,:] * (bart(1, 'fft -u 12', imgs[:,None,:,:] * maps) + 1 / np.sqrt(2) * self.stdev * noise)
             if self.inverse_crime and ksp is None:
                 out = masks[:,None,:,:] * (fft2uc(imgs[:,None,:,:] * maps) + 1 / np.sqrt(2) * self.stdev * noise)
             else:
                 out = masks[:,None,:,:] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
 
             if self.adjoint:
-                #out = np.sum(np.conj(maps) * bart(1, 'fft -iu 12', out), axis=1).squeeze()
                 out = np.sum(np.conj(maps) * ifft2uc(out), axis=1).squeeze()
             else:
                 out = fftmod(out)
@@ -247,7 +243,6 @@ def fftmod(out):
     out2[...,:,::2] *= -1
     out2 *= -1
     return out2
-    #return bart(1, 'fftmod 12', out)
 
 def fftshift(x):
     axes = (-2, -1)

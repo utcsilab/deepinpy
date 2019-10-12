@@ -9,14 +9,12 @@ import sys
 import pytorch_lightning as pl
 
 from deepinpy.utils import utils
-import deepinpy.utils.complex as cp
-import deepinpy.opt.conjgrad
 from deepinpy.utils import sim
-from deepinpy.opt import opt
-from deepinpy.models.mcmri.mcmri import MultiChannelMRI
+from deepinpy import opt
+from deepinpy.forwards import MultiChannelMRI
+import deepinpy.utils.complex as cp
 
-
-import torchvision.utils
+from torchvision.utils import make_grid
 
 class Recon(pl.LightningModule):
 
@@ -74,7 +72,7 @@ class Recon(pl.LightningModule):
             cfl.writecfl('maps', utils.t2n(maps[_idx,...]))
             cfl.writecfl('ksp', utils.t2n(inp[_idx,...]))
             myim = cp.zabs(torch.cat((x_adj[_idx,...], x_hat[_idx,...], imgs[_idx,...]), dim=1))[None,None,...,0]
-            grid = torchvision.utils.make_grid(myim, scale_each=True, normalize=True, nrow=1)
+            grid = make_grid(myim, scale_each=True, normalize=True, nrow=1)
             self.logger.experiment.add_image('Train prediction', grid, 0)
 
         loss = self.loss_fun(x_hat, imgs)

@@ -1,20 +1,11 @@
 #!/usr/bin/env python
 
-import numpy as np
 import torch
-#import torch.nn.functional
-import cfl
-import sys
 
 from deepinpy.utils import utils
-import deepinpy.utils.complex as cp
-import deepinpy.opt.conjgrad
-from deepinpy.utils import sim
-from deepinpy.opt import opt
-from deepinpy.models.mcmri.mcmri import MultiChannelMRI
-from deepinpy.recons.recon import Recon
-
-import torchvision.utils
+from deepinpy.opt import conjgrad
+from deepinpy.forwards import MultiChannelMRI
+from deepinpy.recons import Recon
 
 class CGSenseRecon(Recon):
 
@@ -27,5 +18,5 @@ class CGSenseRecon(Recon):
 
     def forward(self, y, A):
         x_adj = A.adjoint(y)
-        return deepinpy.opt.conjgrad.conjgrad(x_adj, x_adj, A.normal, l2lam=0., verbose=False, eps=self.eps, max_iter=self.cg_max_iter)
+        return conjgrad(x_adj, x_adj, A.normal, l2lam=0., verbose=False, eps=self.eps, max_iter=self.cg_max_iter)
 

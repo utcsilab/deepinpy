@@ -2,4 +2,4 @@
 Deep inverse problems in Python
 """
 
-#from .utils import *
+from .mcmri.mcmri import MultiChannelMRI

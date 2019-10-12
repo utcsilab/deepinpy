@@ -2,21 +2,15 @@
 
 import numpy as np
 import torch
-#import torch.nn.functional
-import cfl
-import sys
 import tqdm
 
 from deepinpy.utils import utils
-import deepinpy.utils.complex as cp
-import deepinpy.opt.conjgrad
-from deepinpy.opt import opt
+from  deepinpy.opt import conjgrad
+from deepinpy import opt
 from deepinpy.utils import sim
-from deepinpy.models.mcmri.mcmri import MultiChannelMRI
-from deepinpy.models.resnet.resnet import ResNet5Block, ResNet
-from deepinpy.recons.recon import Recon
-
-import torchvision.utils
+from deepinpy.forwards import MultiChannelMRI
+from deepinpy.models import ResNet5Block, ResNet
+from deepinpy.recons import Recon
 
 class DeepBasisPursuitRecon(Recon):
 
@@ -51,7 +45,7 @@ class DeepBasisPursuitRecon(Recon):
 
                 rhs = self.l2lam * A.adjoint(z - u) + r
                 fun = lambda xx: self.l2lam * A.normal(xx) + xx
-                x, n_cg = deepinpy.opt.conjgrad.conjgrad(x, rhs, fun, verbose=False, eps=1e-5, max_iter=self.cg_max_iter)
+                x, n_cg = conjgrad(x, rhs, fun, verbose=False, eps=1e-5, max_iter=self.cg_max_iter)
                 num_cg[i, j] = n_cg
 
                 Ax_plus_u = A(x) + u

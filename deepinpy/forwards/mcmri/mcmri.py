@@ -2,9 +2,6 @@
 
 import numpy as np
 import torch
-#import torch.nn.functional
-import cfl
-import sys
 
 import deepinpy.utils.complex as cp
 
