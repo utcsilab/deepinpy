@@ -33,8 +33,11 @@ def main_train(args, gpu_ids=None):
 
     #trainer = Trainer(experiment=exp, max_nb_epochs=1, train_percent_check=.1)
     #trainer = Trainer(experiment=exp, max_nb_epochs=100, gpus=[2, 3], distributed_backend='dp')
-    print('gpu ids are', gpu_ids)
-    trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs')
+    if args.cpu:
+        trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs')
+    else:
+        print('gpu ids are', gpu_ids)
+        trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs')
     #trainer = Trainer(experiment=exp, max_nb_epochs=10)
 
     trainer.fit(M)
@@ -62,6 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
     parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=1)
     parser.add_argument('--gpu', action='store', dest='gpu', type=int, help='gpu number', default=0)
+    parser.add_argument('--cpu', action='store_true', dest='cpu', help='Use CPU', default=False)
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
     parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
     parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
