@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from deepinpy.utils import utils
-from deepinpy.opt import conjgrad
+from deepinpy.opt import ConjGrad
 from deepinpy.models import ResNet5Block, ResNet
 from deepinpy.recons import Recon
 
@@ -20,11 +20,18 @@ class MoDLRecon(Recon):
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
     def forward(self, y, A):
-        num_cg = np.zeros((self.num_unrolls,))
+        self.num_cg = np.zeros((self.num_unrolls,))
         x_adj = A.adjoint(y)
         x = x_adj
         for i in range(self.num_unrolls):
             r = self.denoiser(x)
-            x, n_cg = conjgrad(r, x_adj + self.l2lam * r, A.normal, verbose=False, eps=1e-5, max_iter=self.cg_max_iter, l2lam=self.l2lam)
-            num_cg[i] = n_cg
-        return x, num_cg
+            cg_op = ConjGrad(x_adj + self.l2lam * r, A.normal, l2lam=self.l2lam, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
+            x = cg_op.forward(x)
+            n_cg = cg_op.num_cg
+            self.num_cg[i] = n_cg
+        return x
+
+    def get_metadata(self):
+        return {
+                'num_cg': self.num_cg,
+                }

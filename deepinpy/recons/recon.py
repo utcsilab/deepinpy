@@ -56,8 +56,8 @@ class Recon(pl.LightningModule):
 
         A = self._build_MCMRI(maps, masks)
 
-        x_adj = A.adjoint(inp)
-        x_hat, num_cg = self.forward(inp, A)
+        x_hat = self.forward(inp, A)
+        num_cg = self.get_metadata()['num_cg']
         _b = inp.shape[0]
         if _b == 1 and idx == 0:
                 _idx = 0
@@ -66,6 +66,7 @@ class Recon(pl.LightningModule):
         else:
             _idx = None
         if _idx is not None:
+            x_adj = A.adjoint(inp)
             cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
             cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
             cfl.writecfl('masks', utils.t2n2(masks[_idx,...]))

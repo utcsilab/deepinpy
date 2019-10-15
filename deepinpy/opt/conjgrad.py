@@ -4,6 +4,29 @@ import torch
 
 from deepinpy.opt import ip_batch, dot_batch
 
+class ConjGrad(torch.nn.Module):
+    def __init__(self, rhs, Aop_fun, max_iter=20, l2lam=0., eps=1e-6, verbose=True):
+        super(ConjGrad, self).__init__()
+
+        self.rhs = rhs
+        self.Aop_fun = Aop_fun
+        self.max_iter = max_iter
+        self.l2lam = l2lam
+        self.eps = eps
+        self.verbose = verbose
+
+        self.num_cg = None
+
+    def forward(self, x):
+        x, num_cg = conjgrad(x, self.rhs, self.Aop_fun, max_iter=self.max_iter, l2lam=self.l2lam, eps=self.eps, verbose=self.verbose)
+        self.num_cg = num_cg
+        return x
+
+    def get_metadata(self):
+        return {
+                'num_cg': self.num_cg,
+                }
+
 def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
     ''' batched conjugate gradient descent. assumes the first index is batch size '''
 

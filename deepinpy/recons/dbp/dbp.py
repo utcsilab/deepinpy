@@ -5,7 +5,7 @@ import torch
 import tqdm
 
 from deepinpy.utils import utils
-from  deepinpy.opt import conjgrad
+from  deepinpy.opt import ConjGrad
 from deepinpy import opt
 from deepinpy.utils import sim
 from deepinpy.forwards import MultiChannelMRI
@@ -36,7 +36,7 @@ class DeepBasisPursuitRecon(Recon):
         z_old.requires_grad = False
         u.requires_grad = False
 
-        num_cg = np.zeros((self.num_unrolls,self.num_admm,))
+        self.num_cg = np.zeros((self.num_unrolls,self.num_admm,))
 
         for i in range(self.num_unrolls):
             r = self.denoiser(x)
@@ -45,8 +45,10 @@ class DeepBasisPursuitRecon(Recon):
 
                 rhs = self.l2lam * A.adjoint(z - u) + r
                 fun = lambda xx: self.l2lam * A.normal(xx) + xx
-                x, n_cg = conjgrad(x, rhs, fun, verbose=False, eps=1e-5, max_iter=self.cg_max_iter)
-                num_cg[i, j] = n_cg
+                cg_op = ConjGrad(rhs, fun, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
+                x = cg_op.forward(x)
+                n_cg = cg_op.num_cg
+                self.num_cg[i, j] = n_cg
 
                 Ax_plus_u = A(x) + u
                 z_old = z
@@ -61,4 +63,9 @@ class DeepBasisPursuitRecon(Recon):
                     if self.debug_level > 0:
                         tqdm.tqdm.write('stopping early, a={}'.format(a))
                     break
-        return x, num_cg.ravel()
+        return x
+
+    def get_metadata(self):
+        return {
+                'num_cg': self.num_cg.ravel(),
+                }

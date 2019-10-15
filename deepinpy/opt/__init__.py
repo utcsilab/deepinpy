@@ -6,4 +6,4 @@ Optimization routines
 """
 
 from .opt import *
-from .conjgrad import conjgrad
+from .conjgrad import ConjGrad
