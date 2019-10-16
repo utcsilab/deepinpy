@@ -24,6 +24,8 @@ class DeepBasisPursuitRecon(Recon):
         elif args.network == 'ResNet':
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
+        self.debug_level = 0
+
     def forward(self, y, A):
         eps = opt.ip_batch(A.maps.shape[1] * A.mask.sum((1, 2))).sqrt() * self.stdev
         x = A.adjoint(y)
