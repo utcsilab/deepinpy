@@ -70,15 +70,16 @@ class Recon(pl.LightningModule):
         else:
             _idx = None
         if _idx is not None:
-            x_adj = A.adjoint(inp)
-            cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
-            cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
-            cfl.writecfl('masks', utils.t2n2(masks[_idx,...]))
-            cfl.writecfl('maps', utils.t2n(maps[_idx,...]))
-            cfl.writecfl('ksp', utils.t2n(inp[_idx,...]))
-            myim = cp.zabs(torch.cat((x_adj[_idx,...], x_hat[_idx,...], imgs[_idx,...]), dim=1))[None,None,...,0]
-            grid = make_grid(myim, scale_each=True, normalize=True, nrow=1)
-            self.logger.experiment.add_image('Train prediction', grid, 0)
+            with torch.no_grad():
+                x_adj = A.adjoint(inp)
+                cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
+                cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
+                cfl.writecfl('masks', utils.t2n2(masks[_idx,...]))
+                cfl.writecfl('maps', utils.t2n(maps[_idx,...]))
+                cfl.writecfl('ksp', utils.t2n(inp[_idx,...]))
+                myim = cp.zabs(torch.cat((x_adj[_idx,...], x_hat[_idx,...], imgs[_idx,...]), dim=1))[None,None,...,0]
+                grid = make_grid(myim, scale_each=True, normalize=True, nrow=1)
+                self.logger.experiment.add_image('Train prediction', grid, 0)
 
         loss = self.loss_fun(x_hat, imgs)
 
