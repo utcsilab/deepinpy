@@ -6,3 +6,4 @@ tags
 *.hdr
 logs
 data
+.coverage
