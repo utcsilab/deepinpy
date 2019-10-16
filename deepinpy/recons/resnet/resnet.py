@@ -16,4 +16,7 @@ class ResNetRecon(Recon):
 
     def forward(self, y, A):
         x_adj = A.adjoint(y)
-        return self.denoiser(x_adj), 0
+        return self.denoiser(x_adj)
+
+    def get_metadata(self):
+        return {}

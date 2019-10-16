@@ -57,7 +57,11 @@ class Recon(pl.LightningModule):
         A = self._build_MCMRI(maps, masks)
 
         x_hat = self.forward(inp, A)
-        num_cg = self.get_metadata()['num_cg']
+        try:
+            num_cg = self.get_metadata()['num_cg']
+        except KeyError:
+            num_cg = 0
+
         _b = inp.shape[0]
         if _b == 1 and idx == 0:
                 _idx = 0
