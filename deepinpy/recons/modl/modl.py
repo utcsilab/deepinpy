@@ -5,7 +5,7 @@ import torch
 
 from deepinpy.utils import utils
 from deepinpy.opt import ConjGrad
-from deepinpy.models import ResNet5Block, ResNet
+from deepinpy.models import ResNet5Block, ResNet, UnrollNet
 from deepinpy.recons import Recon
 
 class MoDLRecon(Recon):
@@ -19,25 +19,57 @@ class MoDLRecon(Recon):
         elif args.network == 'ResNet':
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
+        modl_recon_one_unroll = MoDLReconOneUnroll(denoiser=self.denoiser, l2lam=self.l2lam, args=args)
+        self.unroll_model = UnrollNet(module_list=[modl_recon_one_unroll], data_list=[None],  num_unrolls=self.num_unrolls)
+
     def batch(self, data):
 
         maps = data['maps']
         masks = data['masks']
         inp = data['out']
 
+        self.unroll_model.batch(data)
+
         self.A = self._build_MCMRI(maps, masks)
         self.x_adj = self.A.adjoint(inp)
 
+        modl_recon_one_unroll = self.unroll_model.module_list[0]
+        modl_recon_one_unroll.A = self.A
+        modl_recon_one_unroll.x_adj = self.x_adj
+
     def forward(self, y):
-        self.num_cg = np.zeros((self.num_unrolls,))
-        assert self.x_adj is not None, 'x_adj not computed!'
-        x = self.x_adj
-        for i in range(self.num_unrolls):
-            r = self.denoiser(x)
-            cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
-            x = cg_op.forward(x)
-            n_cg = cg_op.num_cg
-            self.num_cg[i] = n_cg
+        return self.unroll_model(self.A.adjoint(y))
+
+    def get_metadata(self):
+        return {
+                'num_cg':  np.array([m['num_cg'] for m in self.unroll_model.get_metadata()]),
+                }
+
+class MoDLReconOneUnroll(torch.nn.Module):
+
+    def __init__(self, denoiser, l2lam, args):
+        super(MoDLReconOneUnroll, self).__init__()
+        self.l2lam = l2lam
+        self.num_cg = None
+        self.x_adj = None
+        self.args = args
+        self.denoiser = denoiser
+
+    def batch(self, data):
+
+        maps = data['maps']
+        masks = data['masks']
+        inp = data['out']
+
+    def forward(self, x):
+
+        #assert self.x_adj is not None, "x_adj not computed!"
+        r = self.denoiser(x)
+
+        cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.args.cg_max_iter, eps=self.args.cg_eps, verbose=False)
+        x = cg_op.forward(x)
+        self.num_cg = cg_op.num_cg
+
         return x
 
     def get_metadata(self):
