@@ -49,6 +49,12 @@ class Recon(pl.LightningModule):
     def batch(self, data):
         raise NotImplementedError
 
+    def forward(self, x):
+        raise NotImplementedError
+
+    def get_metadata(self):
+        raise NotImplementedError
+
     def training_step(self, batch, batch_nb):
         idx, data = batch
         idx = utils.itemize(idx)
