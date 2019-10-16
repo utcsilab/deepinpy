@@ -26,10 +26,19 @@ class DeepBasisPursuitRecon(Recon):
 
         self.debug_level = 0
 
-    def forward(self, y, A):
-        eps = opt.ip_batch(A.maps.shape[1] * A.mask.sum((1, 2))).sqrt() * self.stdev
-        x = A.adjoint(y)
-        z = A(x)
+    def batch(self, data):
+
+        maps = data['maps']
+        masks = data['masks']
+        inp = data['out']
+
+        self.A = self._build_MCMRI(maps, masks)
+        self.x_adj = self.A.adjoint(inp)
+
+    def forward(self, y):
+        eps = opt.ip_batch(self.A.maps.shape[1] * self.A.mask.sum((1, 2))).sqrt() * self.stdev
+        x = self.A.adjoint(y)
+        z = self.A(x)
         z_old = z
         u = z.new_zeros(z.shape)
 
@@ -45,22 +54,22 @@ class DeepBasisPursuitRecon(Recon):
 
             for j in range(self.num_admm):
 
-                rhs = self.l2lam * A.adjoint(z - u) + r
-                fun = lambda xx: self.l2lam * A.normal(xx) + xx
+                rhs = self.l2lam * self.A.adjoint(z - u) + r
+                fun = lambda xx: self.l2lam * self.A.normal(xx) + xx
                 cg_op = ConjGrad(rhs, fun, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
                 x = cg_op.forward(x)
                 n_cg = cg_op.num_cg
                 self.num_cg[i, j] = n_cg
 
-                Ax_plus_u = A(x) + u
+                Ax_plus_u = self.A(x) + u
                 z_old = z
                 z = y + opt.l2ball_proj_batch(Ax_plus_u - y, eps)
                 u = Ax_plus_u - z
 
                 # check ADMM convergence
-                Ax = A(x)
+                Ax = self.A(x)
                 r_norm = opt.ip_batch(Ax-z).sqrt()
-                s_norm = opt.ip_batch(self.l2lam * A.adjoint(z - z_old)).sqrt()
+                s_norm = opt.ip_batch(self.l2lam * self.A.adjoint(z - z_old)).sqrt()
                 if (r_norm + s_norm).max() < 1E-2:
                     if self.debug_level > 0:
                         tqdm.tqdm.write('stopping early, a={}'.format(a))

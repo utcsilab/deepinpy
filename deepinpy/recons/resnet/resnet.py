@@ -14,9 +14,17 @@ class ResNetRecon(Recon):
         elif args.network == 'ResNet':
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
-    def forward(self, y, A):
-        x_adj = A.adjoint(y)
-        return self.denoiser(x_adj)
+    def batch(self, data):
+
+        maps = data['maps']
+        masks = data['masks']
+        inp = data['out']
+
+        self.A = self._build_MCMRI(maps, masks)
+        self.x_adj = self.A.adjoint(inp)
+
+    def forward(self, y):
+        return self.denoiser(self.x_adj)
 
     def get_metadata(self):
         return {}

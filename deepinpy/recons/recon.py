@@ -46,17 +46,19 @@ class Recon(pl.LightningModule):
     def _build_MCMRI(self, maps, masks):
         return MultiChannelMRI(maps, masks, 0.)
 
+    def batch(self, data):
+        raise NotImplementedError
+
     def training_step(self, batch, batch_nb):
         idx, data = batch
         idx = utils.itemize(idx)
         imgs = data['imgs']
-        maps = data['maps']
-        masks = data['masks']
         inp = data['out']
 
-        A = self._build_MCMRI(maps, masks)
+        self.batch(data)
 
-        x_hat = self.forward(inp, A)
+        x_hat = self.forward(inp)
+
         try:
             num_cg = self.get_metadata()['num_cg']
         except KeyError:
@@ -71,11 +73,14 @@ class Recon(pl.LightningModule):
             _idx = None
         if _idx is not None:
             with torch.no_grad():
-                x_adj = A.adjoint(inp)
+                if self.x_adj is None:
+                    x_adj = self.A.adjoint(inp)
+                else:
+                    x_adj = self.x_adj
                 cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
                 cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
-                cfl.writecfl('masks', utils.t2n2(masks[_idx,...]))
-                cfl.writecfl('maps', utils.t2n(maps[_idx,...]))
+                cfl.writecfl('masks', utils.t2n2(data['masks'][_idx,...]))
+                cfl.writecfl('maps', utils.t2n(data['maps'][_idx,...]))
                 cfl.writecfl('ksp', utils.t2n(inp[_idx,...]))
                 myim = cp.zabs(torch.cat((x_adj[_idx,...], x_hat[_idx,...], imgs[_idx,...]), dim=1))[None,None,...,0]
                 grid = make_grid(myim, scale_each=True, normalize=True, nrow=1)

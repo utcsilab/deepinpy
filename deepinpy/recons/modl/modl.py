@@ -19,13 +19,22 @@ class MoDLRecon(Recon):
         elif args.network == 'ResNet':
             self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
 
-    def forward(self, y, A):
+    def batch(self, data):
+
+        maps = data['maps']
+        masks = data['masks']
+        inp = data['out']
+
+        self.A = self._build_MCMRI(maps, masks)
+        self.x_adj = self.A.adjoint(inp)
+
+    def forward(self, y):
         self.num_cg = np.zeros((self.num_unrolls,))
-        x_adj = A.adjoint(y)
-        x = x_adj
+        assert self.x_adj is not None, 'x_adj not computed!'
+        x = self.x_adj
         for i in range(self.num_unrolls):
             r = self.denoiser(x)
-            cg_op = ConjGrad(x_adj + self.l2lam * r, A.normal, l2lam=self.l2lam, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
+            cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
             x = cg_op.forward(x)
             n_cg = cg_op.num_cg
             self.num_cg[i] = n_cg
