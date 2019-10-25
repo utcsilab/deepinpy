@@ -6,6 +6,7 @@ import torch
 from deepinpy.utils import utils
 from deepinpy.opt import ConjGrad
 from deepinpy.models import ResNet5Block, ResNet, UnrollNet
+from deepinpy.forwards import MultiChannelMRI
 from deepinpy.recons import Recon
 
 class MoDLRecon(Recon):
@@ -23,19 +24,9 @@ class MoDLRecon(Recon):
         self.unroll_model = UnrollNet(module_list=[modl_recon_one_unroll], data_list=[None],  num_unrolls=self.num_unrolls)
 
     def batch(self, data):
-
-        maps = data['maps']
-        masks = data['masks']
-        inp = data['out']
-
         self.unroll_model.batch(data)
-
-        self.A = self._build_MCMRI(maps, masks)
-        self.x_adj = self.A.adjoint(inp)
-
-        modl_recon_one_unroll = self.unroll_model.module_list[0]
-        modl_recon_one_unroll.A = self.A
-        modl_recon_one_unroll.x_adj = self.x_adj
+        self.x_adj = self.unroll_model.module_list[0].x_adj
+        self.A = self.unroll_model.module_list[0].A
 
     def forward(self, y):
         return self.unroll_model(self.A.adjoint(y))
@@ -61,9 +52,12 @@ class MoDLReconOneUnroll(torch.nn.Module):
         masks = data['masks']
         inp = data['out']
 
+        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy)
+        self.x_adj = self.A.adjoint(inp)
+
     def forward(self, x):
 
-        #assert self.x_adj is not None, "x_adj not computed!"
+        assert self.x_adj is not None, "x_adj not computed!"
         r = self.denoiser(x)
 
         cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.args.cg_max_iter, eps=self.args.cg_eps, verbose=False)

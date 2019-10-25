@@ -39,12 +39,10 @@ class Recon(pl.LightningModule):
         self.solver=args.solver
         self.data_file = args.data_file
         self.inverse_crime = args.inverse_crime
+        self.use_sigpy = args.use_sigpy
 
     def _build_data(self):
         self.D = sim.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime)
-
-    def _build_MCMRI(self, maps, masks):
-        return MultiChannelMRI(maps, masks, 0.)
 
     def batch(self, data):
         raise NotImplementedError

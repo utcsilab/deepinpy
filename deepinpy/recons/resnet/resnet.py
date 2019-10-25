@@ -20,7 +20,7 @@ class ResNetRecon(Recon):
         masks = data['masks']
         inp = data['out']
 
-        self.A = self._build_MCMRI(maps, masks)
+        self.A = MultiChannelMRI(maps, masks, l2lam=0.,  img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy)
         self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
