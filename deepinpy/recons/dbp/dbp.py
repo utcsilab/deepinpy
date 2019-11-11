@@ -7,7 +7,6 @@ import tqdm
 from deepinpy.utils import utils
 from  deepinpy.opt import ConjGrad
 from deepinpy import opt
-from deepinpy.utils import sim
 from deepinpy.forwards import MultiChannelMRI
 from deepinpy.models import ResNet5Block, ResNet
 from deepinpy.recons import Recon

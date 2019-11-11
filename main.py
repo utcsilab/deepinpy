@@ -8,8 +8,8 @@ from pytorch_lightning.logging import TestTubeLogger
 import os
 import argparse
 
-#from deepinpy.models.mcmri import mcmri
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
+from deepinpy.forwards import MultiChannelMRIDataset
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -31,14 +31,11 @@ def main_train(args, gpu_ids=None):
     elif args.recon == 'dbp':
         M = DeepBasisPursuitRecon(args)
 
-    #trainer = Trainer(experiment=exp, max_nb_epochs=1, train_percent_check=.1)
-    #trainer = Trainer(experiment=exp, max_nb_epochs=100, gpus=[2, 3], distributed_backend='dp')
     if args.cpu:
         trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs')
     else:
         print('gpu ids are', gpu_ids)
         trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs')
-    #trainer = Trainer(experiment=exp, max_nb_epochs=10)
 
     trainer.fit(M)
 
@@ -85,8 +82,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    #args.optimize_parallel_gpu(main_train, gpu_ids=['2', '3'], max_nb_trials=10)
-    #args.optimize_parallel_cpu(main_train, nb_trials=20, nb_workers=2)
+    args.Dataset = MultiChannelMRIDataset
+
     torch.manual_seed(args.random_seed)
     numpy.random.seed(args.random_seed)
     main_train(args, gpu_ids=[args.gpu])

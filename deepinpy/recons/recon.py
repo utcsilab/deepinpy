@@ -9,9 +9,7 @@ import sys
 import pytorch_lightning as pl
 
 from deepinpy.utils import utils
-from deepinpy.utils import sim
 from deepinpy import opt
-from deepinpy.forwards import MultiChannelMRI
 import deepinpy.utils.complex as cp
 
 from torchvision.utils import make_grid
@@ -22,8 +20,8 @@ class Recon(pl.LightningModule):
         super(Recon, self).__init__()
 
         self._init_args(args)
-        self._build_data()
         self.loss_fun = torch.nn.MSELoss(reduction='sum')
+        self._build_data()
 
     def _init_args(self, args):
         self.step = args.step
@@ -40,9 +38,10 @@ class Recon(pl.LightningModule):
         self.data_file = args.data_file
         self.inverse_crime = args.inverse_crime
         self.use_sigpy = args.use_sigpy
+        self.Dataset = args.Dataset
 
     def _build_data(self):
-        self.D = sim.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, gen_masks=False, sure=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime)
+        self.D = self.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime)
 
     def batch(self, data):
         raise NotImplementedError
