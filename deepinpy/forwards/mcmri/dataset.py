@@ -19,7 +19,7 @@ Simulates data and creates Dataset objects for pytorch
 class MultiChannelMRIDataset(torch.utils.data.Dataset):
     ''' Multichannel MRI data set '''
 
-    def __init__(self, data_file, stdev=.01, num_data_sets=None, adjoint=True, preload=False, id=None, clear_cache=False, cache_data=False, gen_masks=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=True):
+    def __init__(self, data_file, stdev=.01, num_data_sets=None, adjoint=True, preload=False, id=None, clear_cache=False, cache_data=False, gen_masks=False, scale_data=False, fully_sampled=False, data_idx=None, inverse_crime=True, noncart=False):
 
         self.data_file = data_file
         self.stdev = stdev
@@ -33,6 +33,7 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
         self.data_idx = data_idx
         self.scale_data = scale_data
         self.inverse_crime = inverse_crime
+        self.noncart = noncart
 
         if self.data_idx is not None:
             self.num_data_sets = 1
@@ -95,27 +96,38 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
             masks = np.ones(masks.shape)
 
         if self.inverse_crime:
+            assert not self.noncart, 'FIXME: forward sim of NUFFT'
             out = self._sim_data(imgs, maps, masks)
         else:
             out = self._sim_data(imgs, maps, masks, ksp)
 
-        maps = fftmod(maps) # FIXME: slow
+        if not self.noncart:
+            maps = fftmod(maps)
         return imgs, maps, masks, out
 
     def _sim_data(self, imgs, maps, masks, ksp=None):
 
         # N, nc, nx, ny
-        noise = np.random.randn(*maps.shape) + 1j * np.random.randn(*maps.shape)
+        if self.noncart:
+            assert ksp is not None, 'FIXME: NUFFT forward sim'
+            noise = np.random.randn(*ksp.shape) + 1j * np.random.randn(*ksp.shape)
+        else:
+            noise = np.random.randn(*maps.shape) + 1j * np.random.randn(*maps.shape)
 
         if self.inverse_crime and ksp is None:
             out = masks[:,None,:,:] * (fft2uc(imgs[:,None,:,:] * maps) + 1 / np.sqrt(2) * self.stdev * noise)
         else:
-            out = masks[:,None,:,:] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
+            if self.noncart:
+                out = ksp + 1 / np.sqrt(2) * self.stdev * noise
+            else:
+                out = masks[:,None,:,:] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
 
         if self.adjoint:
+            assert not self.noncart, 'FIXME: support NUFFT sim'
             out = np.sum(np.conj(maps) * ifft2uc(out), axis=1).squeeze()
         else:
-            out = fftmod(out)
+            if not self.noncart:
+                out = fftmod(out)
 
         return out
 

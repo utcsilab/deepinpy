@@ -32,10 +32,10 @@ def main_train(args, gpu_ids=None):
         M = DeepBasisPursuitRecon(args)
 
     if args.cpu:
-        trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs')
+        trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
     else:
         print('gpu ids are', gpu_ids)
-        trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs')
+        trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
 
     trainer.fit(M)
 
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--adam_eps', action='store', type=float, dest='adam_eps', help='adam epsilon', default=1e-8)
     parser.add_argument('--inverse_crime', action='store_true', dest='inverse_crime', help='inverse crime', default=False)
     parser.add_argument('--use_sigpy', action='store_true', dest='use_sigpy', help='use SigPy for Linops', default=False)
+    parser.add_argument('--noncart', action='store_true', dest='noncart', help='NonCartesian data', default=False)
 
     args = parser.parse_args()
 

@@ -52,7 +52,7 @@ class MoDLReconOneUnroll(torch.nn.Module):
         masks = data['masks']
         inp = data['out']
 
-        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy)
+        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.args.use_sigpy, noncart=self.args.noncart)
         self.x_adj = self.A.adjoint(inp)
 
     def forward(self, x):
