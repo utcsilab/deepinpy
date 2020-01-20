@@ -3,7 +3,6 @@
 
 import numpy as np
 import torch
-import cfl
 import sys
 
 import pytorch_lightning as pl
@@ -38,15 +37,17 @@ class Recon(pl.LightningModule):
         self.data_file = args.data_file
         self.inverse_crime = args.inverse_crime
         self.use_sigpy = args.use_sigpy
+        self.noncart = args.noncart
         self.Dataset = args.Dataset
+        self.hparams = args
 
     def _build_data(self):
-        self.D = self.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime)
+        self.D = self.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime, noncart=self.noncart)
 
     def batch(self, data):
         raise NotImplementedError
 
-    def forward(self, x):
+    def forward(self, y):
         raise NotImplementedError
 
     def get_metadata(self):
@@ -80,14 +81,23 @@ class Recon(pl.LightningModule):
                     x_adj = self.A.adjoint(inp)
                 else:
                     x_adj = self.x_adj
-                cfl.writecfl('x_hat', utils.t2n(x_hat[_idx,...]))
-                cfl.writecfl('x_gt', utils.t2n(imgs[_idx,...]))
-                cfl.writecfl('masks', utils.t2n2(data['masks'][_idx,...]))
-                cfl.writecfl('maps', utils.t2n(data['maps'][_idx,...]))
-                cfl.writecfl('ksp', utils.t2n(inp[_idx,...]))
-                myim = cp.zabs(torch.cat((x_adj[_idx,...], x_hat[_idx,...], imgs[_idx,...]), dim=1))[None,None,...,0]
-                grid = make_grid(myim, scale_each=True, normalize=True, nrow=1)
-                self.logger.experiment.add_image('Train prediction', grid, 0)
+                _x_hat = utils.t2n(x_hat[_idx,...])
+                _x_gt = utils.t2n(imgs[_idx,...])
+                _x_adj = utils.t2n(x_adj[_idx,...])
+
+                myim = torch.tensor(np.stack((np.abs(_x_hat), np.angle(_x_hat)), axis=0))[:, None, ...]
+                grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
+                self.logger.experiment.add_image('train_prediction', grid, self.current_epoch)
+
+                if self.current_epoch == 0:
+                    myim = torch.tensor(np.stack((np.abs(_x_gt), np.angle(_x_gt)), axis=0))[:, None, ...]
+                    grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
+                    self.logger.experiment.add_image('ground_truth', grid, 0)
+
+                    myim = torch.tensor(np.stack((np.abs(_x_adj), np.angle(_x_adj)), axis=0))[:, None, ...]
+                    grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
+                    self.logger.experiment.add_image('input', grid, 0)
+
 
         loss = self.loss_fun(x_hat, imgs)
 
@@ -106,6 +116,7 @@ class Recon(pl.LightningModule):
                 'epoch': self.current_epoch,
                 'nrmse': _nrmse, 
                 'max_num_cg': _num_cg,
+                'val_loss': 0.,
                 }
         return {
                 'loss': loss,
