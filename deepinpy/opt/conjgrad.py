@@ -2,6 +2,7 @@
 
 import torch
 
+from deepinpy.utils import utils
 from deepinpy.opt import ip_batch, dot_batch
 
 class ConjGrad(torch.nn.Module):
@@ -52,7 +53,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
     for i in range(max_iter):
 
         if verbose:
-            print('{i}: {rsnew}'.format(i=i, rsnew=itemize(torch.sqrt(rsnew))))
+            print('{i}: {rsnew}'.format(i=i, rsnew=utils.itemize(torch.sqrt(rsnew))))
 
         if rsnew.max() < eps:
             break
@@ -63,7 +64,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
             Ap = Aop_fun(p)
         pAp = dot_batch(p, Ap)
 
-        #print(itemize(pAp))
+        #print(utils.itemize(pAp))
 
         alpha = (rsold / pAp).reshape(reshape)
 
