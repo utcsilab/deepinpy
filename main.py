@@ -32,7 +32,7 @@ def main_train(args, gpu_ids=None):
         M = DeepBasisPursuitRecon(args)
 
     if args.cpu:
-        trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
+        trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate)
     else:
         print('gpu ids are', gpu_ids)
         trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
