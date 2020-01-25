@@ -61,7 +61,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_accumulate', action='store', dest='num_accumulate', type=int, help='nunumber of batch accumulations', default=1)
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
     parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=1)
-    parser.add_argument('--gpu', action='store', dest='gpu', type=int, help='gpu number', default=0)
+    parser.add_argument('--gpu', action='store', dest='gpu', type=str, help='gpu number(s)', default=0)
     parser.add_argument('--cpu', action='store_true', dest='cpu', help='Use CPU', default=False)
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
     parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
@@ -87,4 +87,4 @@ if __name__ == '__main__':
 
     torch.manual_seed(args.random_seed)
     numpy.random.seed(args.random_seed)
-    main_train(args, gpu_ids=[args.gpu])
+    main_train(args, gpu_ids=[int(a) for a in args.gpu.split(',')])
