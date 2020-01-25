@@ -36,6 +36,7 @@ class Recon(pl.LightningModule):
         self.data_file = args.data_file
         self.inverse_crime = args.inverse_crime
         self.use_sigpy = args.use_sigpy
+        self.use_kbnufft = args.use_kbnufft
         self.noncart = args.noncart
         self.Dataset = args.Dataset
         self.hparams = args

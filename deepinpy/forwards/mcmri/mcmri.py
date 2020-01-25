@@ -6,7 +6,7 @@ import torch
 import deepinpy.utils.complex as cp
 
 class MultiChannelMRI(torch.nn.Module):
-    def __init__(self, maps, mask, l2lam=False, img_shape=None, use_sigpy=False, noncart=False):
+    def __init__(self, maps, mask, l2lam=False, img_shape=None, use_sigpy=False, use_kbnufft=False, noncart=False):
         super(MultiChannelMRI, self).__init__()
         self.maps = maps
         self.mask = mask
@@ -15,8 +15,6 @@ class MultiChannelMRI(torch.nn.Module):
         self.noncart = noncart
         self._normal = None
 
-        if self.noncart:
-            assert use_sigpy, 'Must use SigPy for NUFFT!'
 
         if use_sigpy:
             from sigpy import from_pytorch, to_device, Device
@@ -25,11 +23,51 @@ class MultiChannelMRI(torch.nn.Module):
             self.mask = to_device(from_pytorch(self.mask, iscomplex=False), device=sp_device)
             self.img_shape = self.img_shape[:-1] # convert R^2N to C^N
             self._build_model_sigpy()
+        elif use_kbnufft:
+            self._build_model_torchkbnufft()
 
         #if normal is None:
             #self.normal_fun = self._normal
         #else:
             #self.normal_fun = normal
+
+    def _build_model_torchkbnufft(self):
+        from torchkbnufft import MriSenseNufft, AdjMriSenseNufft, ToepSenseNufft
+        from torchkbnufft.nufft.toep_functions import calc_toep_kernel
+        assert self.noncart, 'only for NUFFT'
+        Aop_list = []
+        Aop_adjoint_list = []
+        Aop_normal_list = []
+        Aop_kern_list = []
+        Aop_traj_list = []
+        self._img_shape = self.img_shape[1:-1]
+        self._grid_shape = [2*a for a in self._img_shape]
+        self._mask_shape = self.mask[0,...].shape
+        for i in range(self.img_shape[0]):
+            _maps = self.maps[i, ...].unsqueeze(0).permute((0, 1, 4, 2, 3))
+            _mask = self.mask[i, ...].unsqueeze(0).permute((0, 3, 1, 2)).reshape((1, 2, -1))
+            Aop_traj_list.append(_mask)
+            sensenufft_ob = MriSenseNufft(smap=_maps, im_size=self._img_shape, grid_size=self._grid_shape).to(_maps.dtype).to(_maps.device)
+            print(_maps.dtype, _maps.device)
+            adjsensenufft_ob = AdjMriSenseNufft(smap=_maps, im_size=self._img_shape, grid_size=self._grid_shape).to(_maps.dtype).to(_maps.device)
+            toep_ob = ToepSenseNufft(smap=_maps)
+            normal_kern = calc_toep_kernel(adjsensenufft_ob, _mask)
+
+            Aop_list.append(sensenufft_ob)
+            Aop_adjoint_list.append(adjsensenufft_ob)
+            Aop_normal_list.append(toep_ob)
+            Aop_kern_list.append(normal_kern)
+
+        self.Aop_list = Aop_list
+        self.Aop_adjoint_list = Aop_adjoint_list
+        self.Aop_normal_list = Aop_normal_list
+        self.Aop_kern_list = Aop_kern_list
+        self.Aop_traj_list = Aop_traj_list
+
+        self._forward = self._kbnufft_batch_forward
+        self._adjoint = self._kbnufft_batch_adjoint
+        self._normal = self._kbnufft_batch_normal
+
 
     def _build_model_sigpy(self):
         from sigpy.linop import Multiply
@@ -72,6 +110,42 @@ class MultiChannelMRI(torch.nn.Module):
 
             self._forward = to_pytorch_function(Aop, input_iscomplex=True, output_iscomplex=True).apply
             self._adjoint = to_pytorch_function(Aop.H, input_iscomplex=True, output_iscomplex=True).apply
+            self._normal = to_pytorch_function(Aop.H * Aop, input_iscomplex=True, output_iscomplex=True).apply
+
+    def _kbnufft_batch_forward(self, x):
+        batch_size = x.shape[0]
+        out0 = self.Aop_list[0](x[0])
+        if batch_size == 1:
+            return out0[None,...]
+        else:
+            out = out0
+            for i in range(1, batch_size):
+                out = torch.stack((out, self.Aop_list[i](x[i])), axis=0)
+            return out
+
+    def _kbnufft_batch_adjoint(self, x):
+        x = x.permute((0, 1, 4, 2, 3))
+        batch_size = x.shape[0]
+        print(x.shape, self.Aop_traj_list[0].shape)
+        out0 = self.Aop_adjoint_list[0](x[0].unsqueeze(0), self.Aop_traj_list[0])
+        if batch_size == 1:
+            return out0.permute((0, 2, 3, 4, 1))
+        else:
+            out = out0
+            for i in range(1, batch_size):
+                out = torch.stack((out, self.Aop_adjoint_list[i](x[i].unsqueeze(0), self.Aop_traj_list[i]))[0], axis=0)
+            return out.permute((0, 2, 3, 4, 1))
+
+    def _kbnufft_batch_normal(self, x):
+        batch_size = x.shape[0]
+        out0 = self.Aop_normal_list[0](x[0])
+        if batch_size == 1:
+            return out0[None,...]
+        else:
+            out = out0
+            for i in range(1, batch_size):
+                out = torch.stack((out, self.Aop_normal_list[i](x[i])), axis=0)
+            return out
 
     def _nufft_batch_forward(self, x):
         batch_size = x.shape[0]

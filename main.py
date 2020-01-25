@@ -79,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--adam_eps', action='store', type=float, dest='adam_eps', help='adam epsilon', default=1e-8)
     parser.add_argument('--inverse_crime', action='store_true', dest='inverse_crime', help='inverse crime', default=False)
     parser.add_argument('--use_sigpy', action='store_true', dest='use_sigpy', help='use SigPy for Linops', default=False)
+    parser.add_argument('--use_kbnufft', action='store_true', dest='use_kbnufft', help='use TorchKBNUFFT for Linops', default=False)
     parser.add_argument('--noncart', action='store_true', dest='noncart', help='NonCartesian data', default=False)
     parser.add_argument('--abs_loss', action='store_true', dest='abs_loss', help='use magnitude for loss', default=False)
 
