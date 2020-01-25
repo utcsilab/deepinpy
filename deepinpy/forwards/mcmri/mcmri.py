@@ -76,7 +76,7 @@ class MultiChannelMRI(torch.nn.Module):
         else:
             out = out0
             for i in range(1, batch_size):
-                out = torch.cat((out, self.Aop_list[i](x[i])))
+                out = torch.stack((out, self.Aop_list[i](x[i])), axis=0)
             return out
 
     def _nufft_batch_adjoint(self, x):
@@ -87,7 +87,7 @@ class MultiChannelMRI(torch.nn.Module):
         else:
             out = out0
             for i in range(1, batch_size):
-                out = torch.cat((out, self.Aop_adjoint_list[i](x[i])))
+                out = torch.stack((out, self.Aop_adjoint_list[i](x[i])), axis=0)
             return out
 
     def _forward(self, x):
