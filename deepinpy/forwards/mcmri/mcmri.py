@@ -13,6 +13,7 @@ class MultiChannelMRI(torch.nn.Module):
         self.l2lam = l2lam
         self.img_shape = img_shape
         self.noncart = noncart
+        self._normal = None
 
         if self.noncart:
             assert use_sigpy, 'Must use SigPy for NUFFT!'
@@ -41,6 +42,7 @@ class MultiChannelMRI(torch.nn.Module):
         if self.noncart:
             Aop_list = []
             Aop_adjoint_list = []
+            Aop_normal_list = []
             _img_shape = self.img_shape[1:]
             for i in range(self.img_shape[0]):
                 _maps = self.maps[i, ...]
@@ -53,11 +55,14 @@ class MultiChannelMRI(torch.nn.Module):
                 Aop_H = Sop.H * Fop_H
                 Aop_list.append(to_pytorch_function(Aop, input_iscomplex=True, output_iscomplex=True).apply)
                 Aop_adjoint_list.append(to_pytorch_function(Aop_H, input_iscomplex=True, output_iscomplex=True).apply)
+                Aop_normal_list.append(to_pytorch_function(Aop_H * Aop, input_iscomplex=True, output_iscomplex=True).apply)
 
             self.Aop_list = Aop_list
             self.Aop_adjoint_list = Aop_adjoint_list
+            self.Aop_normal_list = Aop_normal_list
             self._forward = self._nufft_batch_forward
             self._adjoint = self._nufft_batch_adjoint
+            self._normal = self._nufft_batch_normal
 
         else:
             Sop = Multiply(self.img_shape, self.maps)
@@ -90,6 +95,17 @@ class MultiChannelMRI(torch.nn.Module):
                 out = torch.stack((out, self.Aop_adjoint_list[i](x[i])), axis=0)
             return out
 
+    def _nufft_batch_normal(self, x):
+        batch_size = x.shape[0]
+        out0 = self.Aop_normal_list[0](x[0])
+        if batch_size == 1:
+            return out0[None,...]
+        else:
+            out = out0
+            for i in range(1, batch_size):
+                out = torch.stack((out, self.Aop_normal_list[i](x[i])), axis=0)
+            return out
+
     def _forward(self, x):
         return sense_forw(x, self.maps, self.mask)
 
@@ -103,7 +119,10 @@ class MultiChannelMRI(torch.nn.Module):
         return self._adjoint(y)
 
     def normal(self, x):
-        out = self.adjoint(self.forward(x))
+        if self._normal:
+            out = self._normal(x)
+        else:
+            out = self.adjoint(self.forward(x))
         if self.l2lam:
             out = out + self.l2lam * x
         return out
