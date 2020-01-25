@@ -19,7 +19,6 @@ class Recon(pl.LightningModule):
         super(Recon, self).__init__()
 
         self._init_args(args)
-        self.loss_fun = torch.nn.MSELoss(reduction='sum')
         self._build_data()
 
     def _init_args(self, args):
@@ -41,8 +40,19 @@ class Recon(pl.LightningModule):
         self.Dataset = args.Dataset
         self.hparams = args
 
+        self._loss_fun = torch.nn.MSELoss(reduction='sum')
+        if args.abs_loss:
+            self.loss_fun = self._abs_loss_fun
+        else:
+            self.loss_fun = self._loss_fun
+
     def _build_data(self):
         self.D = self.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime, noncart=self.noncart)
+
+    def _abs_loss_fun(self, x_hat, imgs):
+        x_hat_abs = torch.sqrt(x_hat.pow(2).sum(dim=-1))
+        imgs_abs = torch.sqrt(imgs.pow(2).sum(dim=-1))
+        return self._loss_fun(x_hat_abs, imgs_abs)
 
     def batch(self, data):
         raise NotImplementedError

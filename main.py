@@ -80,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--inverse_crime', action='store_true', dest='inverse_crime', help='inverse crime', default=False)
     parser.add_argument('--use_sigpy', action='store_true', dest='use_sigpy', help='use SigPy for Linops', default=False)
     parser.add_argument('--noncart', action='store_true', dest='noncart', help='NonCartesian data', default=False)
+    parser.add_argument('--abs_loss', action='store_true', dest='abs_loss', help='use magnitude for loss', default=False)
 
     args = parser.parse_args()
 
