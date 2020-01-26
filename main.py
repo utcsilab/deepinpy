@@ -88,4 +88,8 @@ if __name__ == '__main__':
 
     torch.manual_seed(args.random_seed)
     numpy.random.seed(args.random_seed)
-    main_train(args, gpu_ids=[int(a) for a in args.gpu.split(',')])
+    if args.gpu:
+        gpu_ids = [int(a) for a in args.gpu.split(',')]
+    else:
+        gpu_ids = None
+    main_train(args, gpu_ids=gpu_ids)
