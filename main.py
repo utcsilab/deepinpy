@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_file', action='store', dest='data_file', type=str, help='data.h5', default=None)
     parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='data.h5', default=None)
     parser.add_argument('--num_data_sets', action='store', dest='num_data_sets', type=int, help='number of data sets to use', default=None)
-    parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=1)
+    parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
     parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip gradients to [-val, +val]', default=False)
     parser.add_argument('--cg_eps', action='store', type=float, dest='cg_eps', help='conjgrad eps', default=1e-4)
@@ -93,6 +93,8 @@ if __name__ == '__main__':
     parser.add_argument('--abs_loss', action='store_true', dest='abs_loss', help='use magnitude for loss', default=False)
     parser.add_argument('--random_name', action='store_true', dest='random_name', help='add random index to name', default=False)
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
+    parser.json_config('--config', default=None)
+    
 
     args = parser.parse_args()
 
@@ -105,6 +107,6 @@ if __name__ == '__main__':
         gpu_ids = None
 
     if args.hyperopt:
-        args.optimize_parallel_cpu(main_train, nb_trials=10, nb_workers=10)
+        args.optimize_parallel_cpu(main_train, nb_trials=args.num_trials, nb_workers=args.num_workers)
     else:
         main_train(args, gpu_ids=gpu_ids)

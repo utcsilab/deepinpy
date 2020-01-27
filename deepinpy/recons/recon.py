@@ -28,7 +28,7 @@ class Recon(pl.LightningModule):
         self.num_unrolls = args.num_unrolls
         self.fully_sampled = args.fully_sampled
         self.batch_size = args.batch_size
-        self.num_workers = args.num_workers
+        self.num_workers = 0 # don't use multiprocessing at the data level
         self.shuffle = args.shuffle
         self.cg_max_iter = args.cg_max_iter
         self.eps = args.cg_eps
