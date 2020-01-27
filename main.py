@@ -16,10 +16,20 @@ torch.backends.cudnn.enabled = True
 
 import numpy.random
 
-def main_train(args, gpu_ids=None):
+def main_train(args, idx=None, gpu_ids=None):
+    args.Dataset = MultiChannelMRIDataset
     #print(args)
     #exp = Experiment(save_dir=os.getcwd())
-    tt_logger = TestTubeLogger(save_dir="./logs", name=args.name, debug=False, create_git_tag=False, version=args.version)
+    if args.random_name:
+        ridx = int(numpy.random.rand()*1000)
+        name = '{}_{}'.format(args.name, ridx)
+    else:
+        name = args.name
+
+    if idx is not None:
+        name = '{}_{}'.format(name, idx)
+
+    tt_logger = TestTubeLogger(save_dir="./logs", name=name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
 
     if args.recon == 'cgsense':
@@ -32,10 +42,10 @@ def main_train(args, gpu_ids=None):
         M = DeepBasisPursuitRecon(args)
 
     if args.cpu:
-        trainer = Trainer(max_nb_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate)
+        trainer = Trainer(max_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate)
     else:
         print('gpu ids are', gpu_ids)
-        trainer = Trainer(max_nb_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
+        trainer = Trainer(max_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
 
     trainer.fit(M)
 
@@ -81,10 +91,11 @@ if __name__ == '__main__':
     parser.add_argument('--use_sigpy', action='store_true', dest='use_sigpy', help='use SigPy for Linops', default=False)
     parser.add_argument('--noncart', action='store_true', dest='noncart', help='NonCartesian data', default=False)
     parser.add_argument('--abs_loss', action='store_true', dest='abs_loss', help='use magnitude for loss', default=False)
+    parser.add_argument('--random_name', action='store_true', dest='random_name', help='add random index to name', default=False)
+    parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
 
     args = parser.parse_args()
 
-    args.Dataset = MultiChannelMRIDataset
 
     torch.manual_seed(args.random_seed)
     numpy.random.seed(args.random_seed)
@@ -92,4 +103,8 @@ if __name__ == '__main__':
         gpu_ids = [int(a) for a in args.gpu.split(',')]
     else:
         gpu_ids = None
-    main_train(args, gpu_ids=gpu_ids)
+
+    if args.hyperopt:
+        args.optimize_parallel_cpu(main_train, nb_trials=10, nb_workers=10)
+    else:
+        main_train(args, gpu_ids=gpu_ids)

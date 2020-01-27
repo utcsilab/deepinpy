@@ -6,7 +6,7 @@ Work in progress package for training deep inverse problems in python
 ```bash
 conda install -c anaconda mkl
 conda install -c pytorch pytorch torchvision
-pip install git+https://github.com/williamFalcon/test-tube.git@master --upgrade
-pip install git+https://github.com/williamFalcon/pytorch-lightning.git@master --upgrade
+pip install git+https://github.com/jtamir/test-tube.git@master --upgrade
+pip install git+https://github.com/PyTorchLightning/pytorch-lightning.git@master --upgrade
 pip install -r requirements.txt
 ```
