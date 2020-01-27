@@ -1,6 +1,11 @@
 # DeepInPy: Deep Inverse Problems for Python
 Work in progress package for training deep inverse problems in python
 
+## Example Usage:
+```bash
+python main.py --config configs/example.json
+```
+
 ## Purpose:
 The purpose of this project is to simplify applied research for deep inverse problems, with specific focus on magnetic resonance imaging (MRI). Deep inverse problems aim to invert a signal model using a combination of deep learning and iterative algorithms, given a dataset of prior knowledge. 
 
@@ -33,10 +38,11 @@ Recon objects are composed of a sequence of modular blocks, including System blo
 <img src="docs/images/blocks.png" width="256">
 
 
-To help with training and hyperparameter search, DeepInPy visualizes typical training results using TensorBoard.
+To help with training and hyperparameter search, DeepInPy visualizes typical training results using TensorBoard. This is enabled through [Test Tube's][testtube] SummaryWriter, which saves all parameter and image information into the `logs` directory:
+```bash
+tensorboard --logdir logs --port 1234 --samples_per_plugin images=500
+```
 <img src="docs/images/tb_hyperopt.png" width="1024">
-
-
 
 DeepInPy can leverage packages such as [SigPy][sigpy] and [Torch KB NUFFT][torchkbnufft] to create the (non-Cartesian) forward models and other signal processing functions. 
 
