@@ -30,11 +30,11 @@ At its core, DeepInPy provides an abstract interface for a Recon object, which t
 
 Recon objects are composed of a sequence of modular blocks, including System blocks (e.g. multi-channel MRI), Model blocks (e.g. CNNs), and Optimization blocks (e.g. Conjugate Gradient). Using this interface, new reconstructions can be built that incorporate multiple types of blocks, including data consistency, loops (unrolls), and neural networks.
 
-<img style='width:120px' src='docs/images/blocks.png'>
+<img src="docs/images/blocks.png" width="256">
 
 
 To help with training and hyperparameter search, DeepInPy visualizes typical training results using TensorBoard.
-<img style='height:320px' src='docs/images/tb_hyperopt.png'>
+<img src="docs/images/tb_hyperopt.png" width="1024">
 
 
 
