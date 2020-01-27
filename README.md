@@ -1,5 +1,7 @@
 # DeepInPy: Deep Inverse Problems for Python
-Work in progress package for training deep inverse problems in python
+Package for training deep inverse problems in Python
+
+This project is a __Work In Progress!__ We are looking for volunteers! Please see the issues page for open problems.
 
 ## Example Usage:
 ```bash
@@ -20,7 +22,6 @@ Many approaches to deep inverse reconstructions follow a similar paradigm:
 To perform this work, a large amount of skeleton code is often necessary, for example to define training loops appropriately. Recently, a number of high-level pacakges aim to streamline this work. In particular, [Pytorch Lightning][pytl] operates as a light layer above PyTorch, enabling researchers to focus on model-building.
 
 This package aims to bring the simplicity of PyTorch Lightning to the inverse problem community by further streamlining the above processes, freeing the user to focus on the innovative components while still easily following best practices for training.
-
 
 
 ### Functionality
@@ -45,7 +46,6 @@ tensorboard --logdir logs --port 1234 --samples_per_plugin images=500
 <img src="docs/images/tb_hyperopt.png" width="1024">
 
 DeepInPy can leverage packages such as [SigPy][sigpy] and [Torch KB NUFFT][torchkbnufft] to create the (non-Cartesian) forward models and other signal processing functions. 
-
 
 
 
