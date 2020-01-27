@@ -4,3 +4,6 @@ scikit-image==0.15.0
 scikit-learn==0.20.2
 scipy==1.2.1
 tqdm==4.36.1
+git+git://github.com/jtamir/test-tube@dip#egg=test-tube
+git+git://github.com/PyTorchLightning/pytorch-lightning.git@master#egg=pytorch-lightning
+
