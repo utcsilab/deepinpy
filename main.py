@@ -18,8 +18,6 @@ import numpy.random
 
 def main_train(args, idx=None, gpu_ids=None):
     args.Dataset = MultiChannelMRIDataset
-    #print(args)
-    #exp = Experiment(save_dir=os.getcwd())
     if args.random_name:
         ridx = int(numpy.random.rand()*1000)
         name = '{}_{}'.format(args.name, ridx)
@@ -44,10 +42,13 @@ def main_train(args, idx=None, gpu_ids=None):
     if args.cpu:
         trainer = Trainer(max_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate)
     else:
-        print('gpu ids are', gpu_ids)
-        trainer = Trainer(max_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None)
+        if args.hyperopt:
+            trainer = Trainer(max_epochs=args.num_epochs, gpus=1, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate)
+        else:
+            trainer = Trainer(max_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend='ddp', accumulate_grad_batches=args.num_accumulate)
 
     trainer.fit(M)
+
 
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'
@@ -101,12 +102,13 @@ if __name__ == '__main__':
 
     torch.manual_seed(args.random_seed)
     numpy.random.seed(args.random_seed)
-    if args.gpu:
-        gpu_ids = [int(a) for a in args.gpu.split(',')]
-    else:
-        gpu_ids = None
 
     if args.hyperopt:
-        args.optimize_parallel_cpu(main_train, nb_trials=args.num_trials, nb_workers=args.num_workers)
+        if args.gpu is None:
+            args.optimize_parallel_cpu(main_train, nb_trials=args.num_trials, nb_workers=args.num_workers)
+        else:
+            gpu_ids = [a.strip() for a in args.gpu.split(',')]
+            args.optimize_parallel_gpu(main_train, gpu_ids=gpu_ids, max_nb_trials=args.num_trials)
     else:
+        gpu_ids = [int(a) for a in args.gpu.split(',')]
         main_train(args, gpu_ids=gpu_ids)
