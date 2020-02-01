@@ -92,6 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_sigpy', action='store_true', dest='use_sigpy', help='use SigPy for Linops', default=False)
     parser.add_argument('--noncart', action='store_true', dest='noncart', help='NonCartesian data', default=False)
     parser.add_argument('--abs_loss', action='store_true', dest='abs_loss', help='use magnitude for loss', default=False)
+    parser.add_argument('--self_supervised', action='store_true', dest='self_supervised', help='self-supervised loss', default=False)
     parser.add_argument('--random_name', action='store_true', dest='random_name', help='add random index to name', default=False)
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
     parser.json_config('--config', default=None)

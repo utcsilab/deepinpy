@@ -38,6 +38,7 @@ class Recon(pl.LightningModule):
         self.use_sigpy = args.use_sigpy
         self.noncart = args.noncart
         self.Dataset = args.Dataset
+        self.self_supervised = args.self_supervised
         self.hparams = args
 
         self._loss_fun = torch.nn.MSELoss(reduction='sum')
@@ -46,6 +47,7 @@ class Recon(pl.LightningModule):
         else:
             self.loss_fun = self._loss_fun
 
+
     def _build_data(self):
         self.D = self.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime, noncart=self.noncart)
 
@@ -53,6 +55,7 @@ class Recon(pl.LightningModule):
         x_hat_abs = torch.sqrt(x_hat.pow(2).sum(dim=-1))
         imgs_abs = torch.sqrt(imgs.pow(2).sum(dim=-1))
         return self._loss_fun(x_hat_abs, imgs_abs)
+
 
     def batch(self, data):
         raise NotImplementedError
@@ -109,7 +112,14 @@ class Recon(pl.LightningModule):
                     self.logger.experiment.add_image('0_input', grid, 0)
 
 
-        loss = self.loss_fun(x_hat, imgs)
+        if self.self_supervised:
+            pred = self.A.forward(x_hat)
+            gt = inp
+        else:
+            pred = x_hat
+            gt = imgs
+
+        loss = self.loss_fun(pred, gt)
 
         _loss = loss.clone().detach().requires_grad_(False)
         try:
