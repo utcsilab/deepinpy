@@ -110,5 +110,8 @@ if __name__ == '__main__':
             gpu_ids = [a.strip() for a in args.gpu.split(',')]
             args.optimize_parallel_gpu(main_train, gpu_ids=gpu_ids, max_nb_trials=args.num_trials)
     else:
-        gpu_ids = [int(a) for a in args.gpu.split(',')]
+        if args.gpu is not None:
+            gpu_ids = [int(a) for a in args.gpu.split(',')]
+        else:
+            gpu_ids = None
         main_train(args, gpu_ids=gpu_ids)
