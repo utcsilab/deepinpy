@@ -39,6 +39,7 @@ class Recon(pl.LightningModule):
         self.noncart = args.noncart
         self.Dataset = args.Dataset
         self.self_supervised = args.self_supervised
+        self.distributed_training = args.distributed_training
         self.hparams = args
 
         self._loss_fun = torch.nn.MSELoss(reduction='sum')
@@ -153,4 +154,10 @@ class Recon(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.D, batch_size=self.batch_size, shuffle=self.shuffle, num_workers=self.num_workers, drop_last=True)
+        if self.distributed_training:
+            sampler = torch.utils.data.distributed.DistributedSampler(self.D, shuffle=self.shuffle)
+            shuffle = False
+        else:
+            sampler = None
+            shuffle = self.shuffle
+        return torch.utils.data.DataLoader(self.D, batch_size=self.batch_size, shuffle=shuffle, num_workers=self.num_workers, drop_last=True, sampler=sampler)

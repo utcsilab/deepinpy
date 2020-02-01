@@ -105,6 +105,7 @@ if __name__ == '__main__':
     numpy.random.seed(args.random_seed)
 
     if args.hyperopt:
+        args.distributed_training = False
         if args.gpu is None:
             args.optimize_parallel_cpu(main_train, nb_trials=args.num_trials, nb_workers=args.num_workers)
         else:
@@ -113,6 +114,10 @@ if __name__ == '__main__':
     else:
         if args.gpu is not None:
             gpu_ids = [int(a) for a in args.gpu.split(',')]
+            if len(gpu_ids) > 1:
+                args.distributed_training = True
+            else:
+                args.distributed_training = False
         else:
             gpu_ids = None
         main_train(args, gpu_ids=gpu_ids)
