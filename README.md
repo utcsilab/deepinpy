@@ -52,8 +52,7 @@ DeepInPy can leverage packages such as [SigPy][sigpy] and [Torch KB NUFFT][torch
 ## Installation
 
 ```bash
-conda install -c anaconda mkl
-conda install -c pytorch pytorch torchvision
+conda install -c pytorch pytorch 
 pip install -r requirements.txt
 ```
 
