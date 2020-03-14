@@ -101,16 +101,19 @@ class Recon(pl.LightningModule):
 
                 myim = torch.tensor(np.stack((np.abs(_x_hat), np.angle(_x_hat)), axis=0))[:, None, ...]
                 grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
-                self.logger.experiment.add_image('2_train_prediction', grid, self.current_epoch)
+                if self.logger:
+                    self.logger.experiment.add_image('2_train_prediction', grid, self.current_epoch)
 
                 if self.current_epoch == 0:
                     myim = torch.tensor(np.stack((np.abs(_x_gt), np.angle(_x_gt)), axis=0))[:, None, ...]
                     grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
-                    self.logger.experiment.add_image('1_ground_truth', grid, 0)
+                    if self.logger:
+                        self.logger.experiment.add_image('1_ground_truth', grid, 0)
 
                     myim = torch.tensor(np.stack((np.abs(_x_adj), np.angle(_x_adj)), axis=0))[:, None, ...]
                     grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
-                    self.logger.experiment.add_image('0_input', grid, 0)
+                    if self.logger:
+                        self.logger.experiment.add_image('0_input', grid, 0)
 
 
         if self.self_supervised:
