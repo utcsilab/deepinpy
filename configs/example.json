@@ -1,6 +1,6 @@
 {
 	"random_seed": 723,
-	"data_file": "data/dataset_train_knees_small.h5",
+	"data_file": "deepinpy/tests/dataset_unittest.h5",
 	"shuffle": true,
 	"num_data_sets": 200,
 	"fully_sampled": false,
@@ -30,5 +30,6 @@
 	"num_epochs": 20,
 	"hyperopt": true,
 	"num_workers": 0,
-	"num_trials": 10
+	"num_trials": 10,
+	"distributed_training": false
 }
