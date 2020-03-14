@@ -57,7 +57,6 @@ class Recon(pl.LightningModule):
         imgs_abs = torch.sqrt(imgs.pow(2).sum(dim=-1))
         return self._loss_fun(x_hat_abs, imgs_abs)
 
-
     def batch(self, data):
         raise NotImplementedError
 
@@ -136,7 +135,7 @@ class Recon(pl.LightningModule):
 
         log_dict = {
                 'lambda': _lambda,
-                'loss': _loss,
+                'train_loss': _loss,
                 'epoch': self.current_epoch,
                 'nrmse': _nrmse, 
                 'max_num_cg': _num_cg,
