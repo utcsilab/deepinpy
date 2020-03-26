@@ -9,7 +9,6 @@ import os
 import argparse
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
-from deepinpy.forwards import MultiChannelMRIDataset
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -17,7 +16,6 @@ torch.backends.cudnn.enabled = True
 import numpy.random
 
 def main_train(args, idx=None, gpu_ids=None):
-    args.Dataset = MultiChannelMRIDataset
     if args.random_name:
         ridx = int(numpy.random.rand()*1000)
         name = '{}_{}'.format(args.name, ridx)

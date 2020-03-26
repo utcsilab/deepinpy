@@ -10,47 +10,50 @@ import pytorch_lightning as pl
 from deepinpy.utils import utils
 from deepinpy import opt
 import deepinpy.utils.complex as cp
+from deepinpy.forwards import MultiChannelMRIDataset
 
 from torchvision.utils import make_grid
 
+
 class Recon(pl.LightningModule):
 
-    def __init__(self, args):
+    def __init__(self, hparams):
         super(Recon, self).__init__()
 
-        self._init_args(args)
+        self._init_hparams(hparams)
         self._build_data()
 
-    def _init_args(self, args):
-        self.step = args.step
-        self.stdev = args.stdev
-        self.num_data_sets = args.num_data_sets
-        self.num_unrolls = args.num_unrolls
-        self.fully_sampled = args.fully_sampled
-        self.batch_size = args.batch_size
-        self.num_workers = 0 # don't use multiprocessing at the data level
-        self.shuffle = args.shuffle
-        self.cg_max_iter = args.cg_max_iter
-        self.eps = args.cg_eps
-        self.solver=args.solver
-        self.data_file = args.data_file
-        self.inverse_crime = args.inverse_crime
-        self.use_sigpy = args.use_sigpy
-        self.noncart = args.noncart
-        self.Dataset = args.Dataset
-        self.self_supervised = args.self_supervised
-        self.distributed_training = args.distributed_training
-        self.hparams = args
+    def _init_hparams(self, hparams):
+        #self.step = hparams.step
+        #self.stdev = hparams.stdev
+        #self.num_data_sets = hparams.num_data_sets
+        #self.num_unrolls = hparams.num_unrolls
+        #self.fully_sampled = hparams.fully_sampled
+        #self.batch_size = hparams.batch_size
+        #self.num_workers = 0 # don't use multiprocessing at the data level
+        #self.shuffle = hparams.shuffle
+        #self.cg_max_iter = hparams.cg_max_iter
+        #self.eps = hparams.cg_eps
+        #self.solver=hparams.solver
+        #self.data_file = hparams.data_file
+        #self.inverse_crime = hparams.inverse_crime
+        #self.use_sigpy = hparams.use_sigpy
+        #self.noncart = hparams.noncart
+        #self.self_supervised = hparams.self_supervised
+        #self.self_supervised_adjoint = hparams.self_supervised_adjoint
+        #self.distributed_training = hparams.distributed_training
+        self.hparams = hparams
 
         self._loss_fun = torch.nn.MSELoss(reduction='sum')
-        if args.abs_loss:
+
+        if hparams.abs_loss:
             self.loss_fun = self._abs_loss_fun
         else:
             self.loss_fun = self._loss_fun
 
 
     def _build_data(self):
-        self.D = self.Dataset(data_file=self.data_file, stdev=self.stdev, num_data_sets=self.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.fully_sampled, data_idx=None, inverse_crime=self.inverse_crime, noncart=self.noncart)
+        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
 
     def _abs_loss_fun(self, x_hat, imgs):
         x_hat_abs = torch.sqrt(x_hat.pow(2).sum(dim=-1))
@@ -115,7 +118,7 @@ class Recon(pl.LightningModule):
                         self.logger.experiment.add_image('0_input', grid, 0)
 
 
-        if self.self_supervised:
+        if self.hparams.self_supervised:
             pred = self.A.forward(x_hat)
             gt = inp
         else:
@@ -149,17 +152,17 @@ class Recon(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        if 'adam' in self.solver:
-            return [torch.optim.Adam(self.parameters(), lr=self.step)]
-        elif 'sgd' in self.solver:
-            return [torch.optim.SGD(self.parameters(), lr=self.step)]
+        if 'adam' in self.hparams.solver:
+            return [torch.optim.Adam(self.parameters(), lr=self.hparams.step)]
+        elif 'sgd' in self.hparams.solver:
+            return [torch.optim.SGD(self.parameters(), lr=self.hparams.step)]
 
     @pl.data_loader
     def train_dataloader(self):
-        if self.distributed_training:
-            sampler = torch.utils.data.distributed.DistributedSampler(self.D, shuffle=self.shuffle)
+        if self.hparams.distributed_training:
+            sampler = torch.utils.data.distributed.DistributedSampler(self.D, shuffle=self.hparams.shuffle)
             shuffle = False
         else:
             sampler = None
-            shuffle = self.shuffle
-        return torch.utils.data.DataLoader(self.D, batch_size=self.batch_size, shuffle=shuffle, num_workers=self.num_workers, drop_last=True, sampler=sampler)
+            shuffle = self.hparams.shuffle
+        return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=shuffle, num_workers=self.hparams.num_workers, drop_last=True, sampler=sampler)
