@@ -133,4 +133,5 @@ if __name__ == '__main__':
                 args.distributed_training = False
         else:
             gpu_ids = None
+            args.distributed_training = False
         main_train(args, gpu_ids=gpu_ids)
