@@ -51,13 +51,19 @@ def main_train(args, idx=None, gpu_ids=None):
         print('training from scratch')
         M = MyRecon(args)
 
+    default_save_path = None
     if args.cpu:
-        trainer = Trainer(max_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
+        gpus = None
+        distributed_backend = None # FIXME should this also be ddp?
+    elif args.hyperopt:
+        gpus = 1
+        distributed_backend = None
     else:
-        if args.hyperopt:
-            trainer = Trainer(max_epochs=args.num_epochs, gpus=1, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
-        else:
-            trainer = Trainer(max_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend='ddp', accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
+        gpus = gpu_ids
+        distributed_backend = 'ddp'
+
+
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, default_save_path=default_save_path, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
 
     trainer.fit(M)
 
