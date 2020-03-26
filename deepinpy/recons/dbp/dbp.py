@@ -13,15 +13,15 @@ from deepinpy.recons import Recon
 
 class DeepBasisPursuitRecon(Recon):
 
-    def __init__(self, args):
-        super(DeepBasisPursuitRecon, self).__init__(args)
-        self.l2lam = torch.nn.Parameter(torch.tensor(args.l2lam_init))
-        self.num_admm = args.num_admm
+    def __init__(self, hparams):
+        super(DeepBasisPursuitRecon, self).__init__(hparams)
+        self.l2lam = torch.nn.Parameter(torch.tensor(hparams.l2lam_init))
+        self.num_admm = hparams.num_admm
 
-        if args.network == 'ResNet5Block':
-            self.denoiser = ResNet5Block(num_filters=args.latent_channels, filter_size=7, batch_norm=args.batch_norm)
-        elif args.network == 'ResNet':
-            self.denoiser = ResNet(latent_channels=args.latent_channels, num_blocks=args.num_blocks, kernel_size=7, batch_norm=args.batch_norm)
+        if hparams.network == 'ResNet5Block':
+            self.denoiser = ResNet5Block(num_filters=hparams.latent_channels, filter_size=7, batch_norm=hparams.batch_norm)
+        elif hparams.network == 'ResNet':
+            self.denoiser = ResNet(latent_channels=hparams.latent_channels, num_blocks=hparams.num_blocks, kernel_size=7, batch_norm=hparams.batch_norm)
 
         self.debug_level = 0
 
@@ -31,11 +31,11 @@ class DeepBasisPursuitRecon(Recon):
         masks = data['masks']
         inp = data['out']
 
-        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy, noncart=self.noncart)
+        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
         self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
-        eps = opt.ip_batch(self.A.maps.shape[1] * self.A.mask.sum((1, 2))).sqrt() * self.stdev
+        eps = opt.ip_batch(self.A.maps.shape[1] * self.A.mask.sum((1, 2))).sqrt() * self.hparams.stdev
         x = self.A.adjoint(y)
         z = self.A(x)
         z_old = z
@@ -46,16 +46,16 @@ class DeepBasisPursuitRecon(Recon):
         z_old.requires_grad = False
         u.requires_grad = False
 
-        self.num_cg = np.zeros((self.num_unrolls,self.num_admm,))
+        self.num_cg = np.zeros((self.hparams.num_unrolls,self.hparams.num_admm,))
 
-        for i in range(self.num_unrolls):
+        for i in range(self.hparams.num_unrolls):
             r = self.denoiser(x)
 
-            for j in range(self.num_admm):
+            for j in range(self.hparams.num_admm):
 
                 rhs = self.l2lam * self.A.adjoint(z - u) + r
                 fun = lambda xx: self.l2lam * self.A.normal(xx) + xx
-                cg_op = ConjGrad(rhs, fun, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
+                cg_op = ConjGrad(rhs, fun, max_iter=self.hparams.cg_max_iter, eps=self.hparams.eps, verbose=False)
                 x = cg_op.forward(x)
                 n_cg = cg_op.num_cg
                 self.num_cg[i, j] = n_cg

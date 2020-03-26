@@ -9,9 +9,9 @@ from deepinpy.recons import Recon
 
 class CGSenseRecon(Recon):
 
-    def __init__(self, args):
-        super(CGSenseRecon, self).__init__(args)
-        self.l2lam = torch.nn.Parameter(torch.tensor(args.l2lam_init))
+    def __init__(self, hparams):
+        super(CGSenseRecon, self).__init__(hparams)
+        self.l2lam = torch.nn.Parameter(torch.tensor(hparams.l2lam_init))
         self.A = None
 
     def batch(self, data):
@@ -20,11 +20,11 @@ class CGSenseRecon(Recon):
         masks = data['masks']
         inp = data['out']
 
-        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy, noncart=self.noncart)
+        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
         self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
-        cg_op = ConjGrad(self.x_adj, self.A.normal, l2lam=self.l2lam, max_iter=self.cg_max_iter, eps=self.eps, verbose=False)
+        cg_op = ConjGrad(self.x_adj, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.eps, verbose=False)
         x_out = cg_op.forward(self.x_adj * 0)
         self.num_cg = cg_op.num_cg
         return x_out
