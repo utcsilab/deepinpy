@@ -29,11 +29,10 @@ def main_train(args, idx=None, gpu_ids=None):
 
     tt_logger = TestTubeLogger(save_dir="./logs", name=name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
-    mypath = './logs/{}/version_{}/checkpoints'.format(tt_logger.name, tt_logger.version) 
-    checkpoint_callback = ModelCheckpoint(mypath, 'epoch', save_top_k=1, mode='max') 
-
-    pathlib.Path(mypath).mkdir(parents=True, exist_ok=True)
-
+    save_path = './logs/{}/version_{}'.format(tt_logger.name, tt_logger.version) 
+    checkpoint_path = '{}/checkpoints'.format(save_path)
+    pathlib.Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
+    checkpoint_callback = ModelCheckpoint(checkpoint_path, 'epoch', save_top_k=1, mode='max') 
 
     if args.recon == 'cgsense':
         MyRecon = CGSenseRecon
@@ -51,7 +50,8 @@ def main_train(args, idx=None, gpu_ids=None):
         print('training from scratch')
         M = MyRecon(args)
 
-    default_save_path = None
+    #print(M.network.ResNetBlocks[0].conv1.net[1].weight)
+
     if args.cpu:
         gpus = None
         distributed_backend = None # FIXME should this also be ddp?
@@ -63,7 +63,7 @@ def main_train(args, idx=None, gpu_ids=None):
         distributed_backend = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, default_save_path=default_save_path, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
 
     trainer.fit(M)
 
