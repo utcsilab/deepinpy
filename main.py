@@ -3,9 +3,11 @@
 
 from test_tube import Experiment, HyperOptArgumentParser
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.logging import TestTubeLogger
 
 import os
+import pathlib
 import argparse
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
@@ -27,23 +29,35 @@ def main_train(args, idx=None, gpu_ids=None):
 
     tt_logger = TestTubeLogger(save_dir="./logs", name=name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
+    mypath = './logs/{}/version_{}/checkpoints'.format(tt_logger.name, tt_logger.version) 
+    checkpoint_callback = ModelCheckpoint(mypath, 'epoch', save_top_k=1, mode='max') 
+
+    pathlib.Path(mypath).mkdir(parents=True, exist_ok=True)
+
 
     if args.recon == 'cgsense':
-        M = CGSenseRecon(args)
+        MyRecon = CGSenseRecon
     elif args.recon == 'modl':
-        M = MoDLRecon(args)
+        MyRecon = MoDLRecon
     elif args.recon == 'resnet':
-        M = ResNetRecon(args)
+        MyRecon = ResNetRecon
     elif args.recon == 'dbp':
-        M = DeepBasisPursuitRecon(args)
+        MyRecon = DeepBasisPursuitRecon
+
+    if args.checkpoint_init:
+        print('loading checkpoint: {}'.format(args.checkpoint_init))
+        M = MyRecon.load_from_checkpoint(args.checkpoint_init)
+    else:
+        print('training from scratch')
+        M = MyRecon(args)
 
     if args.cpu:
-        trainer = Trainer(max_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate)
+        trainer = Trainer(max_epochs=args.num_epochs, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
     else:
         if args.hyperopt:
-            trainer = Trainer(max_epochs=args.num_epochs, gpus=1, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate)
+            trainer = Trainer(max_epochs=args.num_epochs, gpus=1, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
         else:
-            trainer = Trainer(max_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend='ddp', accumulate_grad_batches=args.num_accumulate)
+            trainer = Trainer(max_epochs=args.num_epochs, gpus=gpu_ids, logger=tt_logger, default_save_path='./logs', early_stop_callback=None, distributed_backend='ddp', accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
 
     trainer.fit(M)
 
@@ -93,6 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--self_supervised', action='store_true', dest='self_supervised', help='self-supervised loss', default=False)
     parser.add_argument('--random_name', action='store_true', dest='random_name', help='add random index to name', default=False)
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
+    parser.add_argument('--checkpoint_init', action='store', dest='checkpoint_init', type=str, help='load from checkpoint', default=None)
     parser.json_config('--config', default=None)
     
 
