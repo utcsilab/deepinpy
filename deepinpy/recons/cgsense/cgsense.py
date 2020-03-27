@@ -24,7 +24,7 @@ class CGSenseRecon(Recon):
         self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
-        cg_op = ConjGrad(self.x_adj, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.eps, verbose=False)
+        cg_op = ConjGrad(self.x_adj, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
         x_out = cg_op.forward(self.x_adj * 0)
         self.num_cg = cg_op.num_cg
         return x_out

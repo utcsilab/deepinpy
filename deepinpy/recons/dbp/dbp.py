@@ -55,7 +55,7 @@ class DeepBasisPursuitRecon(Recon):
 
                 rhs = self.l2lam * self.A.adjoint(z - u) + r
                 fun = lambda xx: self.l2lam * self.A.normal(xx) + xx
-                cg_op = ConjGrad(rhs, fun, max_iter=self.hparams.cg_max_iter, eps=self.hparams.eps, verbose=False)
+                cg_op = ConjGrad(rhs, fun, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
                 x = cg_op.forward(x)
                 n_cg = cg_op.num_cg
                 self.num_cg[i, j] = n_cg
