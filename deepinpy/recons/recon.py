@@ -165,4 +165,4 @@ class Recon(pl.LightningModule):
         else:
             sampler = None
             shuffle = self.hparams.shuffle
-        return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=shuffle, num_workers=self.hparams.num_workers, drop_last=True, sampler=sampler)
+        return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=shuffle, num_workers=0, drop_last=True, sampler=sampler)
