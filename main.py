@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-from test_tube import Experiment, HyperOptArgumentParser
+from test_tube import HyperOptArgumentParser
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.logging import TestTubeLogger
@@ -63,7 +63,7 @@ def main_train(args, idx=None, gpu_ids=None):
         distributed_backend = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, checkpoint_callback=checkpoint_callback)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1)
 
     trainer.fit(M)
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_accumulate', action='store', dest='num_accumulate', type=int, help='nunumber of batch accumulations', default=1)
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
-    parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=1)
+    parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=None)
     parser.add_argument('--gpu', action='store', dest='gpu', type=str, help='gpu number(s)', default=None)
     parser.add_argument('--cpu', action='store_true', dest='cpu', help='Use CPU', default=False)
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
@@ -111,7 +111,6 @@ if __name__ == '__main__':
     parser.add_argument('--noncart', action='store_true', dest='noncart', help='NonCartesian data', default=False)
     parser.add_argument('--abs_loss', action='store_true', dest='abs_loss', help='use magnitude for loss', default=False)
     parser.add_argument('--self_supervised', action='store_true', dest='self_supervised', help='self-supervised loss', default=False)
-    parser.add_argument('--random_name', action='store_true', dest='random_name', help='add random index to name', default=False)
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
     parser.add_argument('--checkpoint_init', action='store', dest='checkpoint_init', type=str, help='load from checkpoint', default=None)
     parser.json_config('--config', default=None)

@@ -39,22 +39,30 @@ args.use_sigpy = False
 args.noncart = False
 args.abs_loss = False
 args.self_supervised = False
-args.random_name = False
+args.self_supervised_adjoint = False
 args.hyperopt = False
 args.config = None
 args.distributed_training = False
 args.num_epochs = 1
-args.version = 1
+args.version = 0
 
 class TestRecon(unittest.TestCase):
 
     def test_recon(self):
         args.Dataset = MultiChannelMRIDataset
         for recon in [CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon]:
-            print('Testing Recon', recon)
+            print('Testing Recon {}'.format(recon))
             M = recon(args)
+
+            print('  CPU:')
+            trainer = Trainer(max_epochs=args.num_epochs, gpus=None, logger=False)
+            trainer.fit(M)
+
+            print('  GPU:')
             trainer = Trainer(max_epochs=args.num_epochs, gpus=[0], logger=False)
             trainer.fit(M)
+
+            #FIXME: check ddp
 
 if __name__ == '__main__':
     unittest.main()
