@@ -17,17 +17,9 @@ torch.backends.cudnn.enabled = True
 
 import numpy.random
 
-def main_train(args, idx=None, gpu_ids=None):
-    if args.random_name:
-        ridx = int(numpy.random.rand()*1000)
-        name = '{}_{}'.format(args.name, ridx)
-    else:
-        name = args.name
+def main_train(args, gpu_ids=None):
 
-    if idx is not None:
-        name = '{}_{}'.format(name, idx)
-
-    tt_logger = TestTubeLogger(save_dir="./logs", name=name, debug=False, create_git_tag=False, version=args.version)
+    tt_logger = TestTubeLogger(save_dir="./logs", name=args.name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
     save_path = './logs/{}/version_{}'.format(tt_logger.name, tt_logger.version) 
     checkpoint_path = '{}/checkpoints'.format(save_path)
