@@ -5,6 +5,6 @@ scikit-learn==0.20.2
 scipy==1.2.1
 tqdm==4.36.1
 torchvision
-git+git://github.com/jtamir/test-tube@dip#egg=test-tube
+git+git://github.com/williamFalcon/test-tube.git@0.7.5#egg=test-tube
 git+git://github.com/PyTorchLightning/pytorch-lightning.git@0.7.1#egg=pytorch-lightning
 
