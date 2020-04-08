@@ -24,24 +24,6 @@ class Recon(pl.LightningModule):
         self._build_data()
 
     def _init_hparams(self, hparams):
-        #self.step = hparams.step
-        #self.stdev = hparams.stdev
-        #self.num_data_sets = hparams.num_data_sets
-        #self.num_unrolls = hparams.num_unrolls
-        #self.fully_sampled = hparams.fully_sampled
-        #self.batch_size = hparams.batch_size
-        #self.num_workers = 0 # don't use multiprocessing at the data level
-        #self.shuffle = hparams.shuffle
-        #self.cg_max_iter = hparams.cg_max_iter
-        #self.eps = hparams.cg_eps
-        #self.solver=hparams.solver
-        #self.data_file = hparams.data_file
-        #self.inverse_crime = hparams.inverse_crime
-        #self.use_sigpy = hparams.use_sigpy
-        #self.noncart = hparams.noncart
-        #self.self_supervised = hparams.self_supervised
-        #self.self_supervised_adjoint = hparams.self_supervised_adjoint
-        #self.distributed_training = hparams.distributed_training
         self.hparams = hparams
 
         self._loss_fun = torch.nn.MSELoss(reduction='sum')
