@@ -3,7 +3,6 @@
 
 from test_tube import HyperOptArgumentParser
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.logging import TestTubeLogger
 
 import os
@@ -11,6 +10,7 @@ import pathlib
 import argparse
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
+from deepinpy.callback import MyModelCheckpoint
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -24,7 +24,11 @@ def main_train(args, gpu_ids=None):
     save_path = './logs/{}/version_{}'.format(tt_logger.name, tt_logger.version) 
     checkpoint_path = '{}/checkpoints'.format(save_path)
     pathlib.Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
-    checkpoint_callback = ModelCheckpoint(checkpoint_path, 'epoch', save_top_k=1, mode='max') 
+    if args.save_all_checkpoints:
+        save_top_k = -1
+    else:
+        save_top_k = 1
+    checkpoint_callback = MyModelCheckpoint(checkpoint_path, 'epoch', save_top_k=save_top_k, mode='max') 
 
     if args.recon == 'cgsense':
         MyRecon = CGSenseRecon
@@ -35,12 +39,15 @@ def main_train(args, gpu_ids=None):
     elif args.recon == 'dbp':
         MyRecon = DeepBasisPursuitRecon
 
+    M = MyRecon(args)
+
     if args.checkpoint_init:
+        # FIXME: workaround for PyTL issues with loading hparams
         print('loading checkpoint: {}'.format(args.checkpoint_init))
-        M = MyRecon.load_from_checkpoint(args.checkpoint_init)
+        checkpoint = torch.load(args.checkpoint_init, map_location=lambda storage, loc: storage)
+        M.load_state_dict(checkpoint['state_dict'])
     else:
         print('training from scratch')
-        M = MyRecon(args)
 
     #print(M.network.ResNetBlocks[0].conv1.net[1].weight)
 
@@ -56,7 +63,6 @@ def main_train(args, gpu_ids=None):
 
 
     trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1)
-
     trainer.fit(M)
 
 
@@ -105,6 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--self_supervised', action='store_true', dest='self_supervised', help='self-supervised loss', default=False)
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
     parser.add_argument('--checkpoint_init', action='store', dest='checkpoint_init', type=str, help='load from checkpoint', default=None)
+    parser.add_argument('--save_all_checkpoints', action='store_true', dest='save_all_checkpoints', help='Save all checkpoints', default=False)
     parser.json_config('--config', default=None)
     
 
