@@ -10,6 +10,7 @@ Utility functions """
 '''
 
 # TODO: Unused, potentially depreciated
+# FIXME: Dim should be an optional parameter for consistency with torch.topk
 # not used, returns the top k values of a vector along dimension dim (maybe name hard threshold?)
 def topk(inp, k, dim):
     _topk, _idx = torch.topk(abs(inp), k, dim=dim)
@@ -39,15 +40,11 @@ def fftmod(out):
     out2 *= -1
     return out2
 
-# FIXME: Take axes as input instead of hardcoding
 # axes definition with axes, apply shift along last two dimensions of vector, but should be able to take axes as an input
-def fftshift(x):
-    axes = (-2, -1)
+def fftshift(x, axes=(-2, -1)):
     return scipy.fftpack.fftshift(x, axes=axes)
 
-# FIXME: Take axes as input instead of hardcoding
-def ifftshift(x):
-    axes = (-2, -1)
+def ifftshift(x, axes=(-2, -1)):
     return scipy.fftpack.ifftshift(x, axes=axes)
 
 # c = centered
@@ -64,12 +61,8 @@ def fft2uc(x):
 def ifft2uc(x):
     return ifft2c(x) * np.sqrt(np.prod(x.shape[-2:]))
 
-# FIXME: Take axes as input instead of hardcoding
-def fft2(x):
-    axes = (-2, -1)
+def fft2(x, axes=(-2, -1)):
     return scipy.fftpack.fft2(x, axes=axes)
 
-# FIXME: Take axes as input instead of hardcoding
-def ifft2(x):
-    axes = (-2, -1)
+def ifft2(x, axes=(-2, -1)):
     return scipy.fftpack.ifft2(x, axes=axes)
