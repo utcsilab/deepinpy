@@ -14,6 +14,8 @@ from deepinpy.forwards import MultiChannelMRIDataset
 
 from torchvision.utils import make_grid
 
+# I added this for the scheduler
+from torch.optim import lr_scheduler 
 
 class Recon(pl.LightningModule):
 
@@ -52,11 +54,14 @@ class Recon(pl.LightningModule):
         raise NotImplementedError
 
     def training_step(self, batch, batch_nb):
+        for param_group in self.optimizer.param_groups:
+            print('step size is {:.4f}'.format(param_group['lr']))
+            #print(param_group['lr'])
         idx, data = batch
         idx = utils.itemize(idx)
         imgs = data['imgs']
         inp = data['out']
-
+        
         self.batch(data)
 
         x_hat = self.forward(inp)
@@ -135,9 +140,23 @@ class Recon(pl.LightningModule):
 
     def configure_optimizers(self):
         if 'adam' in self.hparams.solver:
-            return [torch.optim.Adam(self.parameters(), lr=self.hparams.step)]
+            optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.step)
+            self.optimizer = optimizer
+            if(self.hparams.lr_scheduler != -1):
+                # doing self.scheduler will create a scheduler instance in our self object
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.hparams.lr_scheduler[0], gamma=self.hparams.lr_scheduler[1])
+                self.scheduler = scheduler
+                return [optimizer], [scheduler]
+            return [optimizer]
         elif 'sgd' in self.hparams.solver:
-            return [torch.optim.SGD(self.parameters(), lr=self.hparams.step)]
+            optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.step)
+            self.optimizer = optimizer
+            if(self.hparams.lr_scheduler != -1):
+                # doing self.scheduler will create a scheduler instance in our self object
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.hparams.lr_scheduler[0], gamma=self.hparams.lr_scheduler[1])
+                self.scheduler = scheduler
+                return [optimizer], [scheduler]
+            return [optimizer]
 
     @pl.data_loader
     def train_dataloader(self):
