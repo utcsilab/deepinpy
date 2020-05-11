@@ -4,14 +4,14 @@
 from test_tube import HyperOptArgumentParser
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TestTubeLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 import os
 import pathlib
 import argparse
-
 import time
 
-from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
+from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon, CSDIP_Recon
 from deepinpy.callback import MyModelCheckpoint
 
 import torch
@@ -21,7 +21,11 @@ torch.backends.cudnn.benchmark = True
 import random # used to avoid race conditions, intentionall unseeded
 import numpy.random
 
-def main_train(args, gpu_ids=None):
+def main_train(args, idx=None, gpu_ids=None):
+    name = args.name
+    start_time = time.time()
+    if idx is not None:
+        name = '{}_{}'.format(name, idx)
 
     if args.hyperopt:
         time.sleep(random.random()) # used to avoid race conditions with parallel jobs
@@ -30,11 +34,7 @@ def main_train(args, gpu_ids=None):
     save_path = './{}/{}/version_{}'.format(args.logdir, tt_logger.name, tt_logger.version)
     checkpoint_path = '{}/checkpoints'.format(save_path)
     pathlib.Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
-    if args.save_all_checkpoints:
-        save_top_k = -1
-    else:
-        save_top_k = 1
-    checkpoint_callback = MyModelCheckpoint(checkpoint_path, 'epoch', save_top_k=save_top_k, mode='max') 
+    checkpoint_callback = MyModelCheckpoint(checkpoint_path, 'epoch', save_top_k=1, mode='max')#, save_newest_only=True) 
 
     if args.recon == 'cgsense':
         MyRecon = CGSenseRecon
@@ -44,16 +44,18 @@ def main_train(args, gpu_ids=None):
         MyRecon = ResNetRecon
     elif args.recon == 'dbp':
         MyRecon = DeepBasisPursuitRecon
-
-    M = MyRecon(args)
+    elif args.recon == 'csdip':
+        MyRecon = CSDIP_Recon
 
     if args.checkpoint_init:
-        # FIXME: workaround for PyTL issues with loading hparams
         print('loading checkpoint: {}'.format(args.checkpoint_init))
+        #M = MyRecon.load_from_checkpoint(args.checkpoint_init)
         checkpoint = torch.load(args.checkpoint_init, map_location=lambda storage, loc: storage)
+        M = MyRecon(args)
         M.load_state_dict(checkpoint['state_dict'])
     else:
         print('training from scratch')
+        M = MyRecon(args)
 
     #print(M.network.ResNetBlocks[0].conv1.net[1].weight)
 
@@ -69,9 +71,8 @@ def main_train(args, gpu_ids=None):
 
 
     trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
-
     trainer.fit(M)
-
+    print("My program took", time.time() - start_time, "to run")
 
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'

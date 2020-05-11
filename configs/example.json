@@ -1,6 +1,6 @@
 {
 	"random_seed": 723,
-	"data_file": "deepinpy/tests/dataset_unittest.h5",
+	"data_file": "/home/kalina/Code/deepinpy-master-v3/data/dataset_train_knees_single.h5",
 	"shuffle": true,
 	"num_data_sets": 10,
 	"name": "Demo",
