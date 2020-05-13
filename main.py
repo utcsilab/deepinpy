@@ -62,7 +62,7 @@ def main_train(args, gpu_ids=None):
         distributed_backend = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
     trainer.fit(M)
 
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_data_sets', action='store', dest='num_data_sets', type=int, help='number of data sets to use', default=None)
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
-    parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip gradients to [-val, +val]', default=False)
+    parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0)
     parser.add_argument('--cg_eps', action='store', type=float, dest='cg_eps', help='conjgrad eps', default=1e-4)
     parser.add_argument('--stdev', action='store', type=float, dest='stdev', help='complex valued noise standard deviation', default=.01)
     parser.add_argument('--max_norm_constraint', action='store', type=float, dest='max_norm_constraint', help='norm constraint on weights', default=None)
