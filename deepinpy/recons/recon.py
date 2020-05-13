@@ -51,6 +51,7 @@ class Recon(pl.LightningModule):
     def get_metadata(self):
         raise NotImplementedError
 
+    # FIXME: batch_nb parameter appears unused.
     def training_step(self, batch, batch_nb):
         idx, data = batch
         idx = utils.itemize(idx)

@@ -8,6 +8,7 @@ import deepinpy.utils.complex as cp
 '''
 Utility functions """
 '''
+# FIXME: Some methods use sub-methods that have optional param axes, axes should also be added to these methods
 
 # TODO: Unused, potentially depreciated
 # FIXME: Dim should be an optional parameter for consistency with torch.topk
