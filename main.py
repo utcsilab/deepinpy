@@ -9,16 +9,21 @@ import os
 import pathlib
 import argparse
 
+import time
+
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
 from deepinpy.callback import MyModelCheckpoint
 
 import torch
 torch.backends.cudnn.enabled = True
 
+import random # used to avoid race conditions, intentionall unseeded
 import numpy.random
 
 def main_train(args, gpu_ids=None):
 
+    if args.hyperopt:
+        time.sleep(random.random()) # used to avoid race conditions with parallel jobs
     tt_logger = TestTubeLogger(save_dir="./logs", name=args.name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
     save_path = './logs/{}/version_{}'.format(tt_logger.name, tt_logger.version) 
