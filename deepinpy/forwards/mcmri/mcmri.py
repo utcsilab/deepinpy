@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Data transformation and processing class with functions."""
 
 import numpy as np
 import torch
@@ -6,6 +7,27 @@ import torch
 import deepinpy.utils.complex as cp
 
 class MultiChannelMRI(torch.nn.Module):
+    """Class which implements a forward operator (matrix A) for data processing and transformation.
+
+    This class performs signal processing functions and various transformations such as masking to data passed to it,
+    which prepares it for model processing. Because it extends a nn.Module, it can be wired into the Recon as part of
+    the System block.
+
+    Args:
+        maps (...): The sensitivity profiles for each MRI coil.
+        mask (...): The mask to incoherently subsample k-space.
+        img_shape (tuple): Dimensions of image.
+        use_sigpy (boolean): Whether or not to use the sigpy package for processing.
+        noncart (boolean): ...
+
+    Attributes:
+        maps (...): The sensitivity profiles for each MRI coil.
+        mask (...): The mask to incoherently subsample k-space.
+        img_shape (tuple): Dimensions of image.
+        use_sigpy (boolean): Whether or not to use the sigpy package for processing.
+        noncart (boolean): ...
+    """
+
     def __init__(self, maps, mask, l2lam=False, img_shape=None, use_sigpy=False, noncart=False):
         super(MultiChannelMRI, self).__init__()
         self.maps = maps
