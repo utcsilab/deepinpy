@@ -119,7 +119,7 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint_init', action='store', dest='checkpoint_init', type=str, help='load from checkpoint', default=None)
     parser.add_argument('--save_all_checkpoints', action='store_true', dest='save_all_checkpoints', help='Save all checkpoints', default=False)
     parser.add_argument('--lr_scheduler', action='store', dest='lr_scheduler', nargs='+', type=int, help='do <learning rate, #epoch> to use a learning rate scheduler', default=-1)
-    
+   
     parser.json_config('--config', default=None)
     
 

@@ -53,6 +53,9 @@ class Recon(pl.LightningModule):
         raise NotImplementedError
 
     def training_step(self, batch, batch_nb):
+        for param_group in self.optimizer.param_groups:
+            print('step size is {:.4f}'.format(param_group['lr']))
+            #print(param_group['lr'])
         idx, data = batch
         idx = utils.itemize(idx)
         imgs = data['imgs']
