@@ -1,3 +1,6 @@
+"""Recon object for combining system blocks (such as datasets and transformers),
+model blocks (such as CNNs and ResNets), and optimization blocks (such as conjugate
+gradient descent)."""
 
 #!/usr/bin/env python
 
@@ -16,6 +19,19 @@ from torchvision.utils import make_grid
 from torch.optim import lr_scheduler 
 
 class Recon(pl.LightningModule):
+    """An abstract class for implementing system-model-optimization (SMO) constructions.
+
+    The Recon is an abstract class which outlines common functionality for all SMO structure implementations. All of them share hyperparameter initialization, MCMRI dataset processing and loading, loss function, training step, and optimizer code. Each implementation of Recon must provide batch, forward, and get_metadata methods in order to define how batches are created from the data, how the model performs its forward pass, and what metadata the user should be able to return. Currently, Recon automatically builds the dataset as an MultiChannelMRIDataset object; overload _build_data to circumvent this.
+
+    Args:
+        hprams (dict): Key-value pairings with parameter names as keys.
+
+    Attributes:
+        hprams (dict): Key-value pairings with hyperparameter names as keys.
+        _loss_fun (func): Set to use either torch.nn.MSELoss or _abs_loss_fun.
+        D (MultiChannelMRIDataset): Holds the MCMRI dataset.
+
+    """
 
     def __init__(self, hparams):
         super(Recon, self).__init__()
@@ -44,15 +60,54 @@ class Recon(pl.LightningModule):
         return self._loss_fun(x_hat_abs, imgs_abs)
 
     def batch(self, data):
+        """Not implemented, should define a forward operator A and the adjoint matrix of the input x.
+
+        Args:
+            data (Tensor): The data which the batch will be drawn from.
+
+        Raises:
+        	NotImplementedError: Method needs to be implemented.
+        """
+
         raise NotImplementedError
 
     def forward(self, y):
-        raise NotImplementedError
+        """Not implemented, should perform a prediction using the implemented model.
+
+        Args:
+        	y (Tensor): The data which will be passed to the model for processing.
+
+        Returns:
+            The model’s prediction in Tensor form.
+
+        Raises:
+        	NotImplementedError: Method needs to be implemented.
+        """
 
     def get_metadata(self):
+        """Accesses metadata for the Recon.
+
+        Returns:
+            A dict holding the Recon’s metadata.
+
+        Raises:
+        	NotImplementedError: Method needs to be implemented.
+        """
         raise NotImplementedError
 
+    # FIXME: batch_nb parameter appears unused.
     def training_step(self, batch, batch_nb):
+        """Defines a training step solving deep inverse problems, including batching, performing a forward pass through
+        the model, and logging data. This may either be supervised or unsupervised based on hyperparameters.
+
+        Args:
+            batch (tuple): Should hold the indices of data and the corresponding data, in said order.
+            batch_nb (None): Currently unimplemented.
+
+        Returns:
+            A dict holding performance data and current epoch for performance tracking over time.
+        """
+
         idx, data = batch
         idx = utils.itemize(idx)
         imgs = data['imgs']
@@ -135,6 +190,12 @@ class Recon(pl.LightningModule):
 
 
     def configure_optimizers(self):
+        """Determines whether to use Adam or SGD depending on hyperparameters.
+
+        Returns:
+            Torch’s implementation of SGD or Adam, depending on hyperparameters.
+        """
+
         if 'adam' in self.hparams.solver:
             self.optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.step)
         elif 'sgd' in self.hparams.solver:
@@ -149,6 +210,12 @@ class Recon(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
+        """Creates a DataLoader object, with distributed training if specified in the hyperparameters.
+
+        Returns:
+            A PyTorch DataLoader that has been configured according to the hyperparameters.
+        """
+
         if self.hparams.distributed_training:
             sampler = torch.utils.data.distributed.DistributedSampler(self.D, shuffle=self.hparams.shuffle)
             shuffle = False
