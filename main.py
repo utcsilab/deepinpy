@@ -68,6 +68,7 @@ def main_train(args, gpu_ids=None):
 
 
     trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
+
     trainer.fit(M)
 
 
@@ -117,6 +118,8 @@ if __name__ == '__main__':
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
     parser.add_argument('--checkpoint_init', action='store', dest='checkpoint_init', type=str, help='load from checkpoint', default=None)
     parser.add_argument('--save_all_checkpoints', action='store_true', dest='save_all_checkpoints', help='Save all checkpoints', default=False)
+    parser.add_argument('--lr_scheduler', action='store', dest='lr_scheduler', nargs='+', type=int, help='do <learning rate, #epoch> to use a learning rate scheduler', default=-1)
+   
     parser.json_config('--config', default=None)
     
 

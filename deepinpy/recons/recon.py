@@ -13,7 +13,7 @@ import deepinpy.utils.complex as cp
 from deepinpy.forwards import MultiChannelMRIDataset
 
 from torchvision.utils import make_grid
-
+from torch.optim import lr_scheduler 
 
 class Recon(pl.LightningModule):
 
@@ -22,6 +22,7 @@ class Recon(pl.LightningModule):
 
         self._init_hparams(hparams)
         self._build_data()
+        self.scheduler = None
 
     def _init_hparams(self, hparams):
         self.hparams = hparams
@@ -56,7 +57,7 @@ class Recon(pl.LightningModule):
         idx = utils.itemize(idx)
         imgs = data['imgs']
         inp = data['out']
-
+        
         self.batch(data)
 
         x_hat = self.forward(inp)
@@ -135,9 +136,16 @@ class Recon(pl.LightningModule):
 
     def configure_optimizers(self):
         if 'adam' in self.hparams.solver:
-            return [torch.optim.Adam(self.parameters(), lr=self.hparams.step)]
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.step)
         elif 'sgd' in self.hparams.solver:
-            return [torch.optim.SGD(self.parameters(), lr=self.hparams.step)]
+            self.optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.step)
+        if(self.hparams.lr_scheduler != -1):
+            # doing self.scheduler will create a scheduler instance in our self object
+            self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=self.hparams.lr_scheduler[0], gamma=self.hparams.lr_scheduler[1])
+        if self.scheduler is None:
+            return [self.optimizer]
+        else:                
+            return [self.optimizer], [self.scheduler]
 
     @pl.data_loader
     def train_dataloader(self):

@@ -31,5 +31,6 @@
 	"num_trials": 10,
 	"num_workers": 0,
 	"distributed_training": false,
-	"self_supervised": true
+	"self_supervised": true,
+	"lr_scheduler": [0.1,5]
 }
