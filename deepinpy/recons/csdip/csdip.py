@@ -4,13 +4,13 @@ from deepinpy.recons import Recon
 import torch
 
 
-class CSDIP_Recon(Recon):
+class CSDIPRecon(Recon):
 
 	def __init__(self, args):
 		self.Z_DIM = 64
 		self.x_adj = None
 		#output_size = self.A.img_shape
-		super(CSDIP_Recon, self).__init__(args)
+		super(CSDIPRecon, self).__init__(args)
 		self.denoiser = DCGAN_MRI(self.Z_DIM, ngf=64, output_size=[320, 256], nc=2, num_measurements=256)
 	def batch(self, data):
 		maps = data['maps']

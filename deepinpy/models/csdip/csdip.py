@@ -6,7 +6,7 @@ from deepinpy.utils import utils
 
 
 class DCGAN_MRI(nn.Module):
-    def __init__(self, nz, ngf=64, output_size=[192,192], nc=2, num_measurements=1000):
+    def __init__(self, nz, ngf=64, output_size=[320,256], nc=2, num_measurements=1000):
         super(DCGAN_MRI, self).__init__()
         self.nc = nc
         self.output_size = output_size
@@ -38,25 +38,25 @@ class DCGAN_MRI(nn.Module):
     
     def forward(self, z):
         input_size = z.size()
-        print(input_size)
+        #print(input_size)
         x = F.relu(self.bn1(self.conv1(z)))
-        print(x.shape)
+        #print(x.shape)
         x = F.relu(self.bn2(self.conv2(x)))
-        print(x.shape)
+        #print(x.shape)
         x = F.relu(self.bn3(self.conv3(x)))
-        print(x.shape)
+        #print(x.shape)
         x = F.relu(self.bn4(self.conv4(x)))
-        print(x.shape)
+        #print(x.shape)
         x = F.relu(self.bn5(self.conv5(x)))
-        print(x.shape)
+        #print(x.shape)
         x = F.relu(self.bn6(self.conv6(x)))
-        print(x.shape)
+        #print(x.shape)
         x = self.conv7(x)
-        print(x.shape)
+        #print(x.shape)
         #x = torch.tanh(x)
-        print(x.shape)
+        #print(x.shape)
         x = x.permute(0, 2, 3, 1)
-        print(x.shape)
+        #print(x.shape)
         return x
 
-        #notice in the resnet model that there is a function called step(self,x,device='cpu')
+    #notice in the resnet model that there is a function called step(self,x,device='cpu')

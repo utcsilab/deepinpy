@@ -11,7 +11,7 @@ import argparse
 
 import time
 
-from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
+from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon, CSDIPRecon
 from deepinpy.callback import MyModelCheckpoint
 
 import torch
@@ -44,6 +44,8 @@ def main_train(args, gpu_ids=None):
         MyRecon = ResNetRecon
     elif args.recon == 'dbp':
         MyRecon = DeepBasisPursuitRecon
+    elif args.recon == 'csdip':
+        MyRecon = CSDIPRecon
 
     M = MyRecon(args)
 
