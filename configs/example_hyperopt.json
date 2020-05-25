@@ -12,5 +12,6 @@
 	"hyperopt": true,
 	"num_workers": 4,
 	"num_trials": 20,
-	"gpu": "0, 1, 2, 3"
+	"gpu": "0, 1, 2, 3",
+	"lr_scheduler": [0.8,5000]
 }

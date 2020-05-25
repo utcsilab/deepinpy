@@ -54,10 +54,11 @@ def main_train(args, gpu_ids=None):
         print('loading checkpoint: {}'.format(args.checkpoint_init))
         checkpoint = torch.load(args.checkpoint_init, map_location=lambda storage, loc: storage)
         M.load_state_dict(checkpoint['state_dict'])
+        print(M.conv2.weight[32,32,:,:], torch.sum(torch.abs(self.conv2.weight).pow(2)))
     else:
         print('training from scratch')
 
-    #print(M.network.ResNetBlocks[0].conv1.net[1].weight)
+    #print(MyRecon.conv2.weight[32,32,:,:], torch.sum(torch.abs(self.conv2.weight).pow(2)))
 
     if gpu_ids is None:
         gpus = None
@@ -73,14 +74,13 @@ def main_train(args, gpu_ids=None):
     trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
     trainer.fit(M)
 
-
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'
     description_str = 'deep inverse problems optimization'
 
-    parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='random_search')
+    parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='grid_search')
 
-    parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, nb_samples=100, low=.0001, high=.001)
+    parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=False, nb_samples=100, low=.0001, high=.001)
     parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=False, low=.0001, high=100, help='initial l2 regularization')
     parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="sgd")
     parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=False, low=1, high=20, help='max number of conjgrad iterations', default=10)
@@ -92,6 +92,7 @@ if __name__ == '__main__':
     parser.opt_range('--num_blocks', action='store', dest='num_blocks', type=int, tunable=False, low=1, high=4, nb_samples=3, help='number of ResNetBlocks', default=3)
     parser.opt_range('--dropout', action='store', dest='dropout', type=float, tunable=False, low=0., high=.5, help='dropout fraction', default=0.)
     parser.opt_list('--batch_norm', action='store_true', dest='batch_norm', tunable=False, options=[True, False], help='batch normalization', default=False)
+    parser.opt_list('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0, tunable=True, nb_samples=10, low=.0001, high=1)
 
     parser.add_argument('--num_accumulate', action='store', dest='num_accumulate', type=int, help='nunumber of batch accumulations', default=1)
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
@@ -105,7 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_data_sets', action='store', dest='num_data_sets', type=int, help='number of data sets to use', default=None)
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
-    parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0)
+    #parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0)
     parser.add_argument('--cg_eps', action='store', type=float, dest='cg_eps', help='conjgrad eps', default=1e-4)
     parser.add_argument('--stdev', action='store', type=float, dest='stdev', help='complex valued noise standard deviation', default=0.)
     parser.add_argument('--max_norm_constraint', action='store', type=float, dest='max_norm_constraint', help='norm constraint on weights', default=None)
