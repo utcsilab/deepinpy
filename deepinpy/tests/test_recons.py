@@ -44,7 +44,7 @@ args.hyperopt = False
 args.config = None
 args.distributed_training = False
 args.num_epochs = 1
-args.version = 0
+args.lr_scheduler = -1
 
 class TestRecon(unittest.TestCase):
 
