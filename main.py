@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.opt_range('--num_blocks', action='store', dest='num_blocks', type=int, tunable=False, low=1, high=4, nb_samples=3, help='number of ResNetBlocks', default=3)
     parser.opt_range('--dropout', action='store', dest='dropout', type=float, tunable=False, low=0., high=.5, help='dropout fraction', default=0.)
     parser.opt_list('--batch_norm', action='store_true', dest='batch_norm', tunable=False, options=[True, False], help='batch normalization', default=False)
-    parser.opt_list('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0, tunable=True, nb_samples=10, low=.0001, high=1)
+    parser.opt_range('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0, tunable=True, nb_samples=10, low=.0001, high=1)
 
     parser.add_argument('--num_accumulate', action='store', dest='num_accumulate', type=int, help='nunumber of batch accumulations', default=1)
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
