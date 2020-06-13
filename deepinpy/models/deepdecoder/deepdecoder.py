@@ -1,3 +1,6 @@
+'''
+Cloned from https://github.com/reinhardh/supplement_deep_decoder
+'''
 import torch
 import torch.nn as nn
 

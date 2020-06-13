@@ -3,48 +3,43 @@ from deepinpy.models import DeepDecoder
 from deepinpy.recons import Recon
 import torch
 
-
-class CSDIPRecon(Recon):
+class DeepDecoderRecon(Recon):
 
 	def __init__(self, args):
-		self.Z_DIM = 64
+        self.num_channels_up = [128]*6
 		self.x_adj = None
 		#output_size = self.A.img_shape
 		super(CSDIPRecon, self).__init__(args)
-		self.denoiser = DCGAN_MRI(self.Z_DIM, ngf=64, output_size=[320, 256], nc=2, num_measurements=256)
+		# self.denoiser = DeepDecoder(ngf=64, output_size=[320, 256], nc=2, num_measurements=256)
+        self.denoiser = DeepDecoder(num_output_channels=2,num_channels_up=self.num_channels_up, upsample_first=True, need_sigmoid=False) #todo: check whether I need to use sigmoid
+        if self.cpu:
+            pass
+        else:
+            self.denoiser = self.denoiser.type(torch.cuda.FloatTensor)
 	def batch(self, data):
 		maps = data['maps']
 		masks = data['masks']
 		inp = data['out'] #read in maps, masks, and k-space input
 
         #initialize z
-
-		zseed = torch.zeros(self.batch_size*self.Z_DIM).view(self.batch_size,self.Z_DIM,1,1)
+        total_upsample = 2**(len(self.num_channels_up))
+        if total_upsample > 64:
+            raise ValueError('desired output size of [320,256] is incompatible with more than 64x upsampling')
+		zseed = torch.zeros(self.batch_size,self.num_channels_up[0],320//total_upsample,256//total_upsample)
 		if self.cpu == True:
-			#print('Im in CPU!')
 			zseed.data.normal_().type(torch.FloatTensor) #init random input seed
 		else:
-			#print('Im in GPU!')
 			zseed.data.normal_().type(torch.cuda.FloatTensor)
 			zseed = zseed.to('cuda:0')
-			#print('kkkkkkkkkkk',[self.denoiser.parameters()][0].device)
 
 		self.z = zseed
-		#print('jjjjjjjjjjjjjjjjjjj', self.z.device)
 		self.A = MultiChannelMRI(maps, masks, l2lam=0.,  img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy, noncart=self.noncart)
-        #self.x_adj = self.A.adjoint(inp)
 
 	def forward(self, y):
-		out =  self.denoiser(self.z) #DCGAN acts on the low-dim space parameterized by z to output the image x
+		out =  self.denoiser(self.z)
 		return out
 
 	def get_metadata(self):
 		return {}
 
-
-#Gotta be careful with the set of arguments for the DCGAN. In the original code, we have the following:
-#args.Z_DIM, NGF, args.IMG_SIZE,\
-#            args.NUM_CHANNELS, args.NUM_MEASUREMENTS
-
-#data['imgs'].shape
 
