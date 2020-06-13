@@ -11,7 +11,7 @@ import argparse
 
 import time
 
-from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon, CSDIPRecon
+from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon, CSDIPRecon, DeepDecoderRecon
 from deepinpy.callback import MyModelCheckpoint
 
 import torch
@@ -27,7 +27,7 @@ def main_train(args, gpu_ids=None):
         time.sleep(random.random()) # used to avoid race conditions with parallel jobs
     tt_logger = TestTubeLogger(save_dir=args.logdir, name=args.name, debug=False, create_git_tag=False, version=args.version, log_graph=False)
     tt_logger.log_hyperparams(args)
-    save_path = './{}/{}/version_{}'.format(args.logdir, tt_logger.name, tt_logger.version)
+    save_path = './logs/{}/version_{}'.format(tt_logger.name, tt_logger.version)
     checkpoint_path = '{}/checkpoints'.format(save_path)
     pathlib.Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
     if args.save_all_checkpoints:
@@ -46,6 +46,8 @@ def main_train(args, gpu_ids=None):
         MyRecon = DeepBasisPursuitRecon
     elif args.recon == 'csdip':
         MyRecon = CSDIPRecon
+    elif args.recon == 'deepdecoder':
+        MyRecon = DeepDecoderRecon
 
     M = MyRecon(args)
 
@@ -123,9 +125,8 @@ if __name__ == '__main__':
     parser.add_argument('--save_all_checkpoints', action='store_true', dest='save_all_checkpoints', help='Save all checkpoints', default=False)
     parser.add_argument('--lr_scheduler', action='store', dest='lr_scheduler', nargs='+', type=int, help='do [#epoch, learning rate multiplicative factor] to use a learning rate scheduler', default=-1)
     parser.add_argument('--save_every_N_epochs', action='store', type=int,  dest='save_every_N_epochs', help='save images every N epochs', default=1)
-   
     parser.json_config('--config', default=None)
-    
+
 
     args = parser.parse_args()
 

@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="deepinp"
+    name="deepinp",
     version="0.0.1",
     author="Jon Tamir",
     author_email="jtamir@utexas.edu",
