@@ -9,3 +9,7 @@ logs
 data
 .coverage
 .DS_Store
+build/
+env/
+dist/
+deepinp.egg-info/
