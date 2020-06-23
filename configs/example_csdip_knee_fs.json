@@ -24,7 +24,7 @@
 	"abs_loss": false,
 	"solver": "adam",
 	"adam_eps": 1e-8,
-	"step": 0.005,
+	"step": 0.01,
 	"num_accumulate": 1,
 	"clip_grads": false,
 	"num_epochs": 50000,
