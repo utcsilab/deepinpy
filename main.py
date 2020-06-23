@@ -73,7 +73,8 @@ def main_train(args, gpu_ids=None):
         distributed_backend = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads, track_grad_norm=2)
+
     trainer.fit(M)
 
 if __name__ == '__main__':

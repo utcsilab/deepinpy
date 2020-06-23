@@ -56,7 +56,7 @@ class DCGAN_MRI(nn.Module):
         #x = torch.tanh(x)
         #print(x.shape)
         x = x.permute(0, 2, 3, 1)
-        #print(x.shape)
+        print(x.shape)
         return x
 
     #notice in the resnet model that there is a function called step(self,x,device='cpu')

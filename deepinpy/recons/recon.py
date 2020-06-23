@@ -238,6 +238,8 @@ class Recon(pl.LightningModule):
             self.optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.step)
         elif 'sgd' in self.hparams.solver:
             self.optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.step)
+        elif 'rmsprop' in self.hparams.solver:
+            self.optimizer = torch.optim.RMSprop(self.parameters(), lr=self.hparams.step) 
         if(self.hparams.lr_scheduler != -1):
             # doing self.scheduler will create a scheduler instance in our self object
             self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=self.hparams.lr_scheduler[0], gamma=self.hparams.lr_scheduler[1])
