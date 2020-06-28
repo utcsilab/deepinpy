@@ -8,6 +8,7 @@ class DeepDecoderRecon(Recon):
     def __init__(self, args):
         self.num_channels_up = [128]*6
         self.x_adj = None
+        self.zseed = None
         super(DeepDecoderRecon, self).__init__(args)
 
         self.denoiser = decodernw(num_output_channels=2,num_channels_up=self.num_channels_up, upsample_first=True, need_sigmoid=False) #todo: check whether I need to use sigmoid
@@ -29,14 +30,17 @@ class DeepDecoderRecon(Recon):
         total_upsample = 2**(len(self.num_channels_up))
         if total_upsample > 64:
             raise ValueError('desired output size of [320,256] is incompatible with more than 64x upsampling')
-        zseed = torch.zeros(self.batch_size,self.num_channels_up[0],320//total_upsample,256//total_upsample)
-        if self.use_cpu :
-            zseed.data.normal_().type(torch.FloatTensor) #init random input seed
-        else:
-            zseed.data.normal_().type(torch.cuda.FloatTensor)
-            zseed = zseed.to('cuda:0') # todo
 
-        self.z = zseed
+        # FIXME: only works for num_data_sets=1
+        if self.zseed is None:
+            zseed = torch.zeros(self.batch_size,self.num_channels_up[0],320//total_upsample,256//total_upsample)
+            if self.use_cpu:
+                zseed.data.normal_().type(torch.FloatTensor) #init random input seed
+            else:
+                zseed.data.normal_().type(torch.cuda.FloatTensor)
+                zseed = zseed.to('cuda:0') # todo
+
+            self.zseed = zseed
         self.A = MultiChannelMRI(maps, masks, l2lam=0.,  img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy, noncart=self.noncart)
         if self.use_cpu :
             pass
@@ -44,7 +48,7 @@ class DeepDecoderRecon(Recon):
             self.A = self.A.cuda() # todo
 
     def forward(self, y):
-        out =  self.denoiser(self.z)
+        out =  self.denoiser(self.zseed)
         out = out.permute(0,2,3,1)
         return out
 
