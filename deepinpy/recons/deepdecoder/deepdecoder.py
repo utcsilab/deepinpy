@@ -46,7 +46,6 @@ class DeepDecoderRecon(Recon):
     def forward(self, y):
         out =  self.denoiser(self.z)
         out = out.permute(0,2,3,1)
-        print(out.shape)
         return out
 
     def get_metadata(self):
