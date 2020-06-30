@@ -11,4 +11,3 @@ from .modl.modl import MoDLRecon
 from .dbp.dbp import DeepBasisPursuitRecon
 from .resnet.resnet import ResNetRecon
 from .csdip.csdip import CSDIPRecon
-from .deepdecoder.deepdecoder import DeepDecoderRecon
