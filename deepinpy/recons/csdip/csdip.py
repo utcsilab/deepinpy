@@ -10,7 +10,7 @@ class CSDIPRecon(Recon):
 
     def __init__(self, args):
         super(CSDIPRecon, self).__init__(args)
-        self.Z_DIM = 64
+        self.Z_DIM = self.hparams.latent_channels
         self.x_adj = None
 
         # FIXME: make work for arbitrary input sizes
