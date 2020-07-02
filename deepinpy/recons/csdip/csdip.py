@@ -26,11 +26,6 @@ class CSDIPRecon(Recon):
 
         self.zseed = None
         self.use_cpu = args.cpu
-        if self.use_cpu:
-            pass
-        else:
-            # FIXME: work for arbitrary GPU
-            self.network = self.network.to('cuda:0')
 
     def batch(self, data):
         maps = data['maps']
@@ -51,16 +46,10 @@ class CSDIPRecon(Recon):
                 zseed.data.normal_().type(torch.FloatTensor)
             else:
                 zseed.data.normal_().type(torch.cuda.FloatTensor)
-                # FIXME: work for arbitrary GPU
-                zseed = zseed.to('cuda:0')
+                zseed = zseed.to(inp.device)
             self.zseed = zseed
 
         self.A = MultiChannelMRI(maps, masks, l2lam=0.,  img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy, noncart=self.noncart)
-        if self.use_cpu:
-            pass
-        else:
-            # FIXME: work for arbitrary GPU
-            self.A = self.A.cuda()
 
     def forward(self, y):
         out =  self.network(self.zseed) #DCGAN acts on the low-dim space parameterized by z to output the image x
