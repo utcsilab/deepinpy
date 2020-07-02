@@ -17,7 +17,7 @@ class CSDIPRecon(Recon):
         if self.hparams.network == 'DCGAN':
             self.network = DCGAN_MRI(self.Z_DIM, ngf=64, output_size=[320, 256], nc=2, num_measurements=256)
         elif self.hparams.network == 'DeepDecoder':
-            self.num_channels_up = [self.Z_DIM]*6
+            self.num_channels_up = [self.Z_DIM]*self.hparams.num_blocks
             self.network = decodernw(num_output_channels=2, num_channels_up=self.num_channels_up, upsample_first=True, need_sigmoid=False)
         else:
             # FIXME: error logging
@@ -39,9 +39,9 @@ class CSDIPRecon(Recon):
                 zseed = torch.zeros(self.batch_size*self.Z_DIM).view(self.batch_size,self.Z_DIM,1,1)
             else:
                 total_upsample = 2**(len(self.num_channels_up))
-                if total_upsample > 64:
-                    raise ValueError('desired output size of [320,256] is incompatible with more than 64x upsampling')
-                zseed = torch.zeros(self.batch_size,self.num_channels_up[0],320//total_upsample,256//total_upsample)
+                #if total_upsample > 64:
+                    #raise ValueError('desired output size of [320,256] is incompatible with more than 64x upsampling')
+                zseed = torch.zeros(self.batch_size,self.num_channels_up[0],inp.shape[-3]//total_upsample,inp.shape[-2]//total_upsample)
             if self.use_cpu:
                 zseed.data.normal_().type(torch.FloatTensor)
             else:
