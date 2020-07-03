@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=False, nb_samples=100, low=.0001, high=.001)
     parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=False, low=.0001, high=100, help='initial l2 regularization')
-    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="sgd")
+    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam', 'rmsprop'], help='optimizer/solver ("adam", "sgd", etc.)', default="adam")
     parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=False, low=1, high=20, help='max number of conjgrad iterations', default=10)
     parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=False, low=1, high=20, help='batch size', default=2)
     parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=False, low=1, high=10, nb_samples=4, help='number of unrolls', default=4)
@@ -91,9 +91,10 @@ if __name__ == '__main__':
     parser.opt_list('--network', action='store', dest='network', type=str, tunable=False, options=['ResNet', 'ResNet5Block'], help='which denoiser network to use', default='ResNet')
     parser.opt_list('--latent_channels', action='store', dest='latent_channels', type=int, tunable=False, options=[16, 32, 64, 128], help='number of latent channels', default=64)
     parser.opt_range('--num_blocks', action='store', dest='num_blocks', type=int, tunable=False, low=1, high=4, nb_samples=3, help='number of ResNetBlocks', default=3)
+    parser.opt_list('--z_dim', action='store', dest='z_dim', type=int, tunable=False, options=[16, 64, 128, 256], help='number of z_dim channels', default=64)
     parser.opt_range('--dropout', action='store', dest='dropout', type=float, tunable=False, low=0., high=.5, help='dropout fraction', default=0.)
     parser.opt_list('--batch_norm', action='store_true', dest='batch_norm', tunable=False, options=[True, False], help='batch normalization', default=False)
-    parser.opt_range('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0, tunable=True, nb_samples=10, low=.0001, high=1)
+    parser.opt_range('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0, tunable=False, nb_samples=10, low=0, high=500)
 
     parser.add_argument('--num_accumulate', action='store', dest='num_accumulate', type=int, help='nunumber of batch accumulations', default=1)
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)

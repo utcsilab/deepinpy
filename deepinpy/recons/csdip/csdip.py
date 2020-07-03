@@ -11,29 +11,28 @@ class CSDIPRecon(Recon):
 
     def __init__(self, args):
         super(CSDIPRecon, self).__init__(args)
-        self.Z_DIM = 16
-        self.N1 = 4
-        self.N2 = 4
-        self.x_adj = None
 
+        self.N1 = 8
+        self.N2 = 8
+        self.x_adj = None
 
         self.output_size = self.D.shape[1:]
         print('output size:', self.output_size)
 
-        # FIXME: make work for arbitrary input sizes
         if self.hparams.network == 'DCGAN':
-            self.network = DCGAN_MRI(self.Z_DIM, ngf=64, output_size=self.output_size, nc=2, num_measurements=256)
+            # FIXME: make work for arbitrary input sizes
+            self.network = DCGAN_MRI(self.hparams.z_dim, ngf=64, output_size=self.output_size, nc=2, num_measurements=256)
+
         elif self.hparams.network == 'DeepDecoder':
-            num_blocks = self.hparams.num_blocks
 
+            # initial number of channels given by z_dim
+            self.num_channels_up = [self.hparams.z_dim] + [self.hparams.latent_channels]*(self.hparams.num_blocks - 1)
 
-            self.num_channels_up = [self.Z_DIM] + [self.hparams.latent_channels]*(self.hparams.num_blocks - 1)
-            #print(self.num_channels_up)
+            # FIXME: make generic for number of dimensions
+            scale_x = [int(np.product([self.N1] + [np.exp(np.log(self.output_size[0]/self.N1)/self.hparams.num_blocks)] * i)) for i in range(self.hparams.num_blocks)] + [self.output_size[0]]
+            scale_y = [int(np.product([self.N2] + [np.exp(np.log(self.output_size[1]/self.N2)/self.hparams.num_blocks)] * i)) for i in range(self.hparams.num_blocks)] + [self.output_size[1]]
 
-            scale_x = [np.round(np.product([self.N1] + [np.exp(np.log(self.output_size[0]/self.N1)/self.hparams.num_blocks)] * i)) for i in range(self.hparams.num_blocks + 1)]
-            scale_y = [np.round(np.product([self.N2] + [np.exp(np.log(self.output_size[1]/self.N2)/self.hparams.num_blocks)] * i)) for i in range(self.hparams.num_blocks + 1)]
-
-            self.upsample_size = list(zip([int(s_x) for s_x in scale_x], [int(s_y) for s_y in scale_y]))
+            self.upsample_size = list(zip(scale_x, scale_y))
 
             self.network = decodernw(num_output_channels=2, num_channels_up=self.num_channels_up, upsample_first=True, need_sigmoid=False, upsample_size=self.upsample_size)
         else:
@@ -53,9 +52,9 @@ class CSDIPRecon(Recon):
         # FIXME: only works for num_data_sets=1
         if self.zseed is None:
             if self.hparams.network == 'DCGAN':
-                zseed = torch.zeros(self.batch_size*self.Z_DIM).view(self.batch_size,self.Z_DIM,1,1)
+                zseed = torch.zeros(self.batch_size*self.hparams.z_dim).view(self.batch_size,self.hparams.z_dim,1,1)
             else:
-                zseed = torch.zeros(self.batch_size, self.Z_DIM, self.N1, self.N2)
+                zseed = torch.zeros(self.batch_size, self.hparams.z_dim, self.N1, self.N2)
                 print('zseed shape is:', zseed.shape)
             if self.use_cpu:
                 zseed.data.normal_().type(torch.FloatTensor)
@@ -65,7 +64,6 @@ class CSDIPRecon(Recon):
             self.zseed = zseed
 
         self.A = MultiChannelMRI(maps, masks, l2lam=0.,  img_shape=data['imgs'].shape, use_sigpy=self.use_sigpy, noncart=self.noncart)
-
     def forward(self, y):
         out =  self.network(self.zseed) #DCGAN acts on the low-dim space parameterized by z to output the image x
         if self.hparams.network == 'DeepDecoder':
@@ -74,11 +72,3 @@ class CSDIPRecon(Recon):
 
     def get_metadata(self):
         return {}
-
-
-#Gotta be careful with the set of arguments for the DCGAN. In the original code, we have the following:
-#args.Z_DIM, NGF, args.IMG_SIZE,\
-#            args.NUM_CHANNELS, args.NUM_MEASUREMENTS
-
-#data['imgs'].shape
-
