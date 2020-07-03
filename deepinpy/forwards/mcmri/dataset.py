@@ -84,10 +84,14 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
     def _len(self):
         with h5py.File(self.data_file, 'r') as F:
             max_data_sets = F['imgs'].shape[0]
+            self.shape = F['imgs'].shape
         return max_data_sets
 
     def __len__(self):
         return self.num_data_sets
+    
+    def shape(self):
+        return self.shape
 
     def __getitem__(self, idx):
 
