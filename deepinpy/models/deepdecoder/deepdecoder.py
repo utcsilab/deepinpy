@@ -35,6 +35,8 @@ def decodernw(
         bn_before_act = False,
         bn_affine = True,
         upsample_first = True,
+        scale_factor = 2,
+        upsample_size = None
         ):
 
     num_channels_up = num_channels_up + [num_channels_up[-1],num_channels_up[-1]]
@@ -42,7 +44,13 @@ def decodernw(
 
     if not (isinstance(filter_size_up, list) or isinstance(filter_size_up, tuple)) :
         filter_size_up   = [filter_size_up]*n_scales
+
+    if not (isinstance(scale_factor, list) or isinstance(scale_factor, tuple)) :
+        scale_factor   = [scale_factor]*n_scales
+
+
     model = nn.Sequential()
+
 
 
     for i in range(len(num_channels_up)-1):
@@ -50,12 +58,17 @@ def decodernw(
         if upsample_first:
             model.add(conv( num_channels_up[i], num_channels_up[i+1],  filter_size_up[i], 1, pad=pad))
             if upsample_mode!='none' and i != len(num_channels_up)-2:
-                model.add(nn.Upsample(scale_factor=2, mode=upsample_mode))
-            #model.add(nn.functional.interpolate(size=None,scale_factor=2, mode=upsample_mode))
+                if upsample_size is None:
+                    model.add(nn.Upsample(scale_factor=scale_factor[i], mode=upsample_mode))
+                else:
+                    model.add(nn.Upsample(size=upsample_size[i+1], mode=upsample_mode))
         else:
             if upsample_mode!='none' and i!=0:
-                model.add(nn.Upsample(scale_factor=2, mode=upsample_mode))
-            #model.add(nn.functional.interpolate(size=None,scale_factor=2, mode=upsample_mode))
+
+                if upsample_size is None:
+                    model.add(nn.Upsample(scale_factor=scale_factor[i], mode=upsample_mode))
+                else:
+                    model.add(nn.Upsample(size=upsample_size[i+1], mode=upsample_mode))
             model.add(conv( num_channels_up[i], num_channels_up[i+1],  filter_size_up[i], 1, pad=pad))
 
         if i != len(num_channels_up)-1:
