@@ -28,7 +28,7 @@ def decodernw(
         num_output_channels=3,
         num_channels_up=[128]*5,
         filter_size_up=1,
-        need_sigmoid=True,
+        need_sigmoid=False,
         pad ='reflection',
         upsample_mode='bilinear',
         act_fun=nn.ReLU(), # nn.LeakyReLU(0.2, inplace=True)
