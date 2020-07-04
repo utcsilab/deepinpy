@@ -32,5 +32,5 @@
 	"num_workers": 0,
 	"distributed_training": false,
 	"self_supervised": true,
-	"lr_scheduler": [0.1,5]
+	"lr_scheduler": [5, 0.1]
 }

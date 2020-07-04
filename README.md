@@ -51,7 +51,7 @@ DeepInPy has capabilities for learning rate scheduling. An example usage has bee
 	
 	"lr_scheduler": [x,y]
 
-where "x" is the multiplicative factor that scales the current learning rate and "y" is the epoch when the multiplicative factor will be applied. Each successive y, e.g. 2y, 3y, 4y etc will also scale the learning rate.
+where "x" is the epoch when the multiplicative factor will be applied and "y" is the multiplicative factor that scales the current learning rate. Each successive x number of epochs, e.g. 2x, 3x, 4x etc will also scale the learning rate.
 
 ## Installation
 
