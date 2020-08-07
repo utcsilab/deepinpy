@@ -135,17 +135,16 @@ class Recon(pl.LightningModule):
                     x_adj = self.A.adjoint(inp)
                 else:
                     x_adj = self.x_adj
-                _x_hat = utils.t2n(x_hat[_idx,...]) # <- high order dims mess this up, need to select 1 of the high orders dims
-                # for (0, ...)
-                # nbatch, T1, T2, X, Y, Z
-                _x_gt = utils.t2n(imgs[_idx,...]) # <- fix these two
-                _x_adj = utils.t2n(x_adj[_idx,...]) # _x_... assumes it is a 2D array (complex valued)
-                # torch tensor -> numpy complex array, gets rid of 2
-                # dont change above lines, add the while loop.
-                # use image data and add a "1" for high orders to test tensorboard. Can also do duplication, so "2" for high orders.
-                # fix tensorboard, test on real example, and have an output for next week.
+                _x_hat = utils.t2n(x_hat[_idx,...]) 
+                _x_gt = utils.t2n(imgs[_idx,...])
+                _x_adj = utils.t2n(x_adj[_idx,...]) 
+          
+                while len(_x_hat.shape) > 2:
+                    _x_hat = _x_hat[0,...]
+                    _x_gt = _x_gt[0,...]
+                    _x_adj = _x_adj[0,...]
 
-                myim = torch.tensor(np.stack((np.abs(_x_hat), np.angle(_x_hat)), axis=0))[:, None, ...] # print and fix (2D case)
+                myim = torch.tensor(np.stack((np.abs(_x_hat), np.angle(_x_hat)), axis=0))[:, None, ...] 
                 grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
                 if self.logger:
                     self.logger.experiment.add_image('2_train_prediction', grid, self.current_epoch)
