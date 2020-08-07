@@ -161,8 +161,8 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
             if self.noncart:
                 out = ksp + 1 / np.sqrt(2) * self.stdev * noise
             else:
-                out = masks[:,None,:,:] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
-
+                out = masks[None,...] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
+            
         if self.adjoint:
             assert not self.noncart, 'FIXME: support NUFFT sim'
             out = np.sum(np.conj(maps) * ifft2uc(out), axis=1).squeeze()
