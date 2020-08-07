@@ -28,7 +28,7 @@ class MultiChannelMRI(torch.nn.Module):
         noncart (boolean): ...
     """
 
-    def __init__(self, maps, mask, l2lam=False, img_shape=None, use_sigpy=False, noncart=False):
+    def __init__(self, maps, mask, l2lam=False, img_shape=None, use_sigpy=False, noncart=False, num_spatial_dims=2):
         super(MultiChannelMRI, self).__init__()
         self.maps = maps
         self.mask = mask
@@ -36,11 +36,12 @@ class MultiChannelMRI(torch.nn.Module):
         self.img_shape = img_shape
         self.noncart = noncart
         self._normal = None
+        self.num_spatial_dims = num_spatial_dims
 
         if self.noncart:
             assert use_sigpy, 'Must use SigPy for NUFFT!'
 
-        if use_sigpy:
+        if use_sigpy: # FIXME: Not yet Implemented for 3D
             from sigpy import from_pytorch, to_device, Device
             sp_device = Device(self.maps.device.index)
             self.maps = to_device(from_pytorch(self.maps, iscomplex=True), device=sp_device)
@@ -129,10 +130,10 @@ class MultiChannelMRI(torch.nn.Module):
             return out
 
     def _forward(self, x):
-        return sense_forw(x, self.maps, self.mask)
+        return sense_forw(x, self.maps, self.mask, ndim=self.num_spatial_dims) 
 
     def _adjoint(self, y):
-        return sense_adj(y, self.maps, self.mask)
+        return sense_adj(y, self.maps, self.mask, ndim=self.num_spatial_dims)
 
     def forward(self, x):
         return self._forward(x)
@@ -144,7 +145,7 @@ class MultiChannelMRI(torch.nn.Module):
         if self._normal:
             out = self._normal(x)
         else:
-            out = self.adjoint(self.forward(x))
+            out = self.adjoint(self.forward(x)) # A transpose Ax
         if self.l2lam:
             out = out + self.l2lam * x
         return out
@@ -153,7 +154,7 @@ class MultiChannelMRI(torch.nn.Module):
         #return self.normal_fun(x)
 
 def maps_forw(img, maps):
-    return cp.zmul(img[:,None,:,:,:], maps)
+    return cp.zmul(img[:,None,...], maps)
 
 def maps_adj(cimg, maps):
     return torch.sum(cp.zmul(cp.zconj(maps), cimg), 1, keepdim=False)
@@ -165,13 +166,13 @@ def fft_adj(x, ndim=2):
     return torch.ifft(x, signal_ndim=ndim, normalized=True)
 
 def mask_forw(y, mask):
-    return y * mask[:,None,:,:,None]
+    return y * mask[:,None,...,None]
+    
+def sense_forw(img, maps, mask, ndim=2): 
+    return mask_forw(fft_forw(maps_forw(img, maps), ndim), mask)
 
-def sense_forw(img, maps, mask):
-    return mask_forw(fft_forw(maps_forw(img, maps)), mask)
+def sense_adj(ksp, maps, mask, ndim=2): # A transpose * y
+    return maps_adj(fft_adj(mask_forw(ksp, mask), ndim), maps)
 
-def sense_adj(ksp, maps, mask):
-    return maps_adj(fft_adj(mask_forw(ksp, mask)), maps)
-
-def sense_normal(img, maps, mask):
-    return maps_adj(fft_adj(mask_forw(fft_forw(maps_forw(img, maps)), mask)), maps)
+def sense_normal(img, maps, mask, ndim=2):
+    return maps_adj(fft_adj(mask_forw(fft_forw(maps_forw(img, maps), ndim), mask), ndim), maps) # A transpose Ax

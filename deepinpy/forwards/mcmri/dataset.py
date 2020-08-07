@@ -84,10 +84,14 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
     def _len(self):
         with h5py.File(self.data_file, 'r') as F:
             max_data_sets = F['imgs'].shape[0]
+            self.shape = F['imgs'].shape
         return max_data_sets
 
     def __len__(self):
         return self.num_data_sets
+    
+    def shape(self):
+        return self.shape
 
     def __getitem__(self, idx):
         if self.data_idx is not None:
@@ -153,8 +157,8 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
             if self.noncart:
                 out = ksp + 1 / np.sqrt(2) * self.stdev * noise
             else:
-                out = masks[:,None,:,:] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
-
+                out = masks[None,...] * (ksp + 1 / np.sqrt(2) * self.stdev * noise)
+            
         if self.adjoint:
             assert not self.noncart, 'FIXME: support NUFFT sim'
             out = np.sum(np.conj(maps) * ifft2uc(out), axis=1).squeeze()

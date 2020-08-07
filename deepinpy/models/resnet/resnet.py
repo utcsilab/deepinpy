@@ -21,7 +21,6 @@ class Conv2dSame(torch.nn.Module):
 class ResNet5Block(torch.nn.Module):
     def __init__(self, num_filters=32, filter_size=3, T=4, num_filters_start=2, num_filters_end=2, batch_norm=False):
         super(ResNet5Block, self).__init__()
-        num_filters_start = num_filters_end = 2
         if batch_norm:
             self.model = torch.nn.Sequential(
                 Conv2dSame(num_filters_start,num_filters,filter_size),
@@ -159,6 +158,7 @@ class ResNet(torch.nn.Module):
 
         # initialize conv variables
         self.in_channels = in_channels
+        
         self.latent_channels = latent_channels
         self.kernel_size = kernel_size
         self.bias = bias
@@ -177,7 +177,14 @@ class ResNet(torch.nn.Module):
         self.topk = topk
 
     def forward(self, x):
-        x = x.permute(0, 3, 1, 2)
+        ndims = len(x.shape)
+        permute_shape = list(range(ndims))
+        permute_shape.insert(1, permute_shape.pop(-1))
+        x = x.permute(permute_shape)
+        temp_shape = x.shape
+        x = x.reshape((x.shape[0], -1, x.shape[-2], x.shape[-1]))
+        
+        #x = x.permute(0, 3, 1, 2)
         residual = x
         for n in range(self.num_blocks):
             x = self.ResNetBlocks[n](x)
@@ -190,11 +197,16 @@ class ResNet(torch.nn.Module):
                 x = act
         x += residual
         #return x.permute(0, 2, 3, 1), act
-        return x.permute(0, 2, 3, 1)
+              
+        x = x.reshape(temp_shape) # 1, 2, 3, 12, 13
+        permute_shape = list(range(ndims)) # we want 0,2,3,4,1
+        permute_shape.insert(ndims-1, permute_shape.pop(1))
+        x = x.permute(permute_shape)
+        return x
 
     def _build_model(self):
         ResNetBlocks = torch.nn.ModuleList()
-
+        
         # first block goes from input space (2ch) to latent space (64ch)
         ResNetBlocks.append(self._add_block(final_relu=True, in_channels=self.in_channels, latent_channels=self.latent_channels, out_channels=self.latent_channels))
 
