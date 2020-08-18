@@ -2,6 +2,7 @@
 
 import torch
 import numpy as np
+import h5py
 
 import deepinpy.utils.complex as cp
 
@@ -9,6 +10,38 @@ import deepinpy.utils.complex as cp
 Utility functions """
 '''
 # FIXME: Some methods use sub-methods that have optional param axes, axes should also be added to these methods
+
+def h5_write(filename, data):
+    """Read numpy arrays from h5 file.
+
+    Args:
+        filename (str): Path to the file
+        data (dict): Dictionary of data to save
+        
+    """
+    with h5py.File(filename, 'w') as F:
+        for key in data.keys():
+            F.create_dataset(key, data=data[key])
+
+def h5_read(filename, key_list):
+    """Read numpy arrays from h5 file.
+
+    Args:
+        filename (str): Path to the file
+        key_list (list): List of keys to open
+
+    Returns:
+        A dictionary of numpy arrays matching key_list
+    """
+    data = {}
+    with h5py.File(filename, 'r') as F:
+        for key in key_list:
+            try:
+                data[key] = np.array(F[key])
+            except:
+                print('Key {} not found in {}. Skipping.'.format(key, filename))
+                data[key] = None
+    return data
 
 # TODO: Unused, potentially depreciated
 # FIXME: Dim should be an optional parameter for consistency with torch.topk
