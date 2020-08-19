@@ -15,10 +15,19 @@ class MoDLRecon(Recon):
         super(MoDLRecon, self).__init__(hparams)
         self.l2lam = torch.nn.Parameter(torch.tensor(hparams.l2lam_init))
 
+        copy_shape = np.array(self.D.shape)
+        if hparams.num_spatial_dimensions == 2:
+            num_channels = 2*np.prod(copy_shape[1:-2])
+        elif hparams.num_spatial_dimensions == 3:
+            num_channels = 2*np.prod(copy_shape[1:-3])
+        else:
+            raise ValueError('only 2D or 3D number of spatial dimensions are supported!')
+        self.in_channels = num_channels
+
         if hparams.network == 'ResNet5Block':
-            self.denoiser = ResNet5Block(num_filters=hparams.latent_channels, filter_size=7, batch_norm=hparams.batch_norm)
+            self.denoiser = ResNet5Block(num_filters_start=self.in_channels, num_filters_end=self.in_channels, num_filters=hparams.latent_channels, filter_size=7, batch_norm=hparams.batch_norm)
         elif hparams.network == 'ResNet':
-            self.denoiser = ResNet(latent_channels=hparams.latent_channels, num_blocks=hparams.num_blocks, kernel_size=7, batch_norm=hparams.batch_norm)
+            self.denoiser = ResNet(in_channels=self.in_channels, latent_channels=hparams.latent_channels, num_blocks=hparams.num_blocks, kernel_size=7, batch_norm=hparams.batch_norm)
 
         modl_recon_one_unroll = MoDLReconOneUnroll(denoiser=self.denoiser, l2lam=self.l2lam, hparams=hparams)
         self.unroll_model = UnrollNet(module_list=[modl_recon_one_unroll], data_list=[None],  num_unrolls=self.hparams.num_unrolls)
