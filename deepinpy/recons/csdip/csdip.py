@@ -19,6 +19,12 @@ class CSDIPRecon(Recon):
         self.output_size = self.D.shape[1:]
         print('output size:', self.output_size)
 
+        if len(self.output_size) > 2:
+            self.num_output_channels = 2 * np.prod(self.output_size[:-2])
+            self.output_size = self.output_size[-2:]
+        else:
+            self.num_output_channels = 2
+
         if self.hparams.network == 'DCGAN':
             # FIXME: make work for arbitrary input sizes
             self.network = DCGAN_MRI(self.hparams.z_dim, ngf=64, output_size=self.output_size, nc=2, num_measurements=256)
@@ -34,7 +40,7 @@ class CSDIPRecon(Recon):
 
             self.upsample_size = list(zip(scale_x, scale_y))
 
-            self.network = decodernw(num_output_channels=2, num_channels_up=self.num_channels_up, upsample_first=True, need_sigmoid=False, upsample_size=self.upsample_size)
+            self.network = decodernw(num_output_channels=self.num_output_channels, num_channels_up=self.num_channels_up, upsample_first=True, need_sigmoid=False, upsample_size=self.upsample_size)
         else:
             # FIXME: error logging
             print('ERROR: invalid network specified')
@@ -67,7 +73,11 @@ class CSDIPRecon(Recon):
     def forward(self, y):
         out =  self.network(self.zseed) #DCGAN acts on the low-dim space parameterized by z to output the image x
         if self.hparams.network == 'DeepDecoder':
-            out = out.permute(0, 2, 3, 1)
+            if len(self.D.shape) == 4:
+                out = out.reshape(out.shape[0], 2, -1, out.shape[-2], out.shape[-1])
+                out = out.permute((0, 2, 3, 4, 1))
+            else:
+                out = out.permute(0, 2, 3, 1)
         return out
 
     def get_metadata(self):
