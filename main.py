@@ -120,6 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--logdir', action='store', dest='logdir', type=str, help='log dir', default='logs')
     parser.add_argument('--save_all_checkpoints', action='store_true', dest='save_all_checkpoints', help='Save all checkpoints', default=False)
     parser.add_argument('--lr_scheduler', action='store', dest='lr_scheduler', nargs='+', type=int, help='do [#epoch, learning rate multiplicative factor] to use a learning rate scheduler', default=-1)
+    parser.add_argument('--save_every_N_epochs', action='store', type=int,  dest='save_every_N_epochs', help='save images every N epochs', default=1)
    
     parser.json_config('--config', default=None)
     
