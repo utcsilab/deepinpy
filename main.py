@@ -24,9 +24,9 @@ def main_train(args, gpu_ids=None):
 
     if args.hyperopt:
         time.sleep(random.random()) # used to avoid race conditions with parallel jobs
-    tt_logger = TestTubeLogger(save_dir="./logs", name=args.name, debug=False, create_git_tag=False, version=args.version)
+    tt_logger = TestTubeLogger(save_dir=args.logdir, name=args.name, debug=False, create_git_tag=False, version=args.version)
     tt_logger.log_hyperparams(args)
-    save_path = './logs/{}/version_{}'.format(tt_logger.name, tt_logger.version) 
+    save_path = './{}/{}/version_{}'.format(args.logdir, tt_logger.name, tt_logger.version)
     checkpoint_path = '{}/checkpoints'.format(save_path)
     pathlib.Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
     if args.save_all_checkpoints:
@@ -117,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--self_supervised', action='store_true', dest='self_supervised', help='self-supervised loss', default=False)
     parser.add_argument('--hyperopt', action='store_true', dest='hyperopt', help='perform hyperparam optimization', default=False)
     parser.add_argument('--checkpoint_init', action='store', dest='checkpoint_init', type=str, help='load from checkpoint', default=None)
+    parser.add_argument('--logdir', action='store', dest='logdir', type=str, help='log dir', default='logs')
     parser.add_argument('--save_all_checkpoints', action='store_true', dest='save_all_checkpoints', help='Save all checkpoints', default=False)
     parser.add_argument('--lr_scheduler', action='store', dest='lr_scheduler', nargs='+', type=int, help='do [#epoch, learning rate multiplicative factor] to use a learning rate scheduler', default=-1)
    
