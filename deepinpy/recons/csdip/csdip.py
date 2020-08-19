@@ -62,10 +62,8 @@ class CSDIPRecon(Recon):
             else:
                 zseed = torch.zeros(self.batch_size, self.hparams.z_dim, self.N1, self.N2)
                 print('zseed shape is:', zseed.shape)
-            if self.use_cpu:
-                zseed.data.normal_().type(torch.FloatTensor)
-            else:
-                zseed.data.normal_().type(torch.cuda.FloatTensor)
+            zseed.data.normal_().type(torch.FloatTensor)
+            if not self.use_cpu:
                 zseed = zseed.to(inp.device)
             self.zseed = zseed
 
