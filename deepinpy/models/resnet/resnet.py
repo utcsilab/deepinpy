@@ -61,9 +61,23 @@ class ResNet5Block(torch.nn.Module):
     
     def step(self, x, device='cpu'):
         # reshape (batch,x,y,channel=2) -> (batch,channe=2,x,y)
-        x = x.permute(0, 3, 1, 2)
-        y = self.model(x)
-        return y.permute(0, 2, 3, 1)
+
+        ndims = len(x.shape)
+        permute_shape = list(range(ndims))
+        permute_shape.insert(1, permute_shape.pop(-1))
+        x = x.permute(permute_shape)
+        temp_shape = x.shape
+        x = x.reshape((x.shape[0], -1, x.shape[-2], x.shape[-1]))
+
+
+        x = self.model(x)
+
+        x = x.reshape(temp_shape) # 1, 2, 3, 12, 13
+        permute_shape = list(range(ndims)) # we want 0,2,3,4,1
+        permute_shape.insert(ndims-1, permute_shape.pop(1))
+        x = x.permute(permute_shape)
+
+        return x
 
 
 class ResNetBlock(torch.nn.Module):
