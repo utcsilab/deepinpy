@@ -3,6 +3,7 @@
 import torch
 import numpy as np
 import h5py
+import scipy
 
 import deepinpy.utils.complex as cp
 
