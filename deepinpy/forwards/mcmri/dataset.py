@@ -90,6 +90,7 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
         return self.num_data_sets
 
     def __getitem__(self, idx):
+
         if self.data_idx is not None:
             idx = self.data_idx
 
@@ -103,11 +104,17 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
         else:
                 imgs, maps, masks, out = self._load_data(idx)
 
+        if imgs.shape[0] == 1:
+            imgs = imgs.squeeze(0)
+            maps = maps.squeeze(0)
+            masks = masks.squeeze(0)
+            out = out.squeeze(0)
+
         data = {
-                'imgs': cp.c2r(imgs.squeeze()).astype(np.float32),
-                'maps': cp.c2r(maps.squeeze()).astype(np.float32),
-                'masks': masks.squeeze().astype(np.float32),
-                'out': cp.c2r(out.squeeze()).astype(np.float32)
+                'imgs': cp.c2r(imgs).astype(np.float32),
+                'maps': cp.c2r(maps).astype(np.float32),
+                'masks': masks.astype(np.float32),
+                'out': cp.c2r(out).astype(np.float32)
                 }
 
         return idx, data
