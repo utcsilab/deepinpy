@@ -54,7 +54,6 @@ def main_train(args, gpu_ids=None):
         print('loading checkpoint: {}'.format(args.checkpoint_init))
         checkpoint = torch.load(args.checkpoint_init, map_location=lambda storage, loc: storage)
         M.load_state_dict(checkpoint['state_dict'])
-        print(M.conv2.weight[32,32,:,:], torch.sum(torch.abs(self.conv2.weight).pow(2)))
     else:
         print('training from scratch')
 
