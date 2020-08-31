@@ -122,7 +122,7 @@ class Recon(pl.LightningModule):
         except KeyError:
             num_cg = 0
 
-        if (self.current_epoch % self.hparams.save_every_N_epochs == 0) or (self.current_epoch == self.hparams.num_epochs - 1):
+        if self.logger and (self.current_epoch % self.hparams.save_every_N_epochs == 0 or self.current_epoch == self.hparams.num_epochs - 1):
             _b = inp.shape[0]
             if _b == 1 and idx == 0:
                     _idx = 0
@@ -136,23 +136,38 @@ class Recon(pl.LightningModule):
                         x_adj = self.A.adjoint(inp)
                     else:
                         x_adj = self.x_adj
+
                     _x_hat = utils.t2n(x_hat[_idx,...]) 
                     _x_gt = utils.t2n(imgs[_idx,...])
                     _x_adj = utils.t2n(x_adj[_idx,...]) 
-              
-                    if self.logger:
-                        myim = torch.tensor(np.stack((np.abs(_x_hat), np.angle(_x_hat)), axis=0))[:, None, ...] 
+
+                    if len(_x_hat.shape) > 2:
+                        _d = tuple(range(len(_x_hat.shape)-2))
+                        _x_hat_rss = np.linalg.norm(_x_hat, axis=_d)
+                        _x_gt_rss = np.linalg.norm(_x_gt, axis=_d)
+                        _x_adj_rss = np.linalg.norm(_x_adj, axis=_d)
+
+                        myim = torch.tensor(np.stack((_x_adj_rss, _x_hat_rss, _x_gt_rss), axis=0))[:, None, ...] 
                         grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
-                        self.logger.experiment.add_image('2_train_prediction', grid, self.current_epoch)
+                        self.logger.experiment.add_image('3_train_prediction_rss', grid, self.current_epoch)
+              
+                        while len(_x_hat.shape) > 2:
+                            _x_hat = _x_hat[0,...]
+                            _x_gt = _x_gt[0,...]
+                            _x_adj = _x_adj[0,...]
 
-                        if self.current_epoch == 0:
-                                myim = torch.tensor(np.stack((np.abs(_x_gt), np.angle(_x_gt)), axis=0))[:, None, ...]
-                                grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
-                                self.logger.experiment.add_image('1_ground_truth', grid, 0)
+                    myim = torch.tensor(np.stack((np.abs(_x_hat), np.angle(_x_hat)), axis=0))[:, None, ...] 
+                    grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
+                    self.logger.experiment.add_image('2_train_prediction', grid, self.current_epoch)
 
-                                myim = torch.tensor(np.stack((np.abs(_x_adj), np.angle(_x_adj)), axis=0))[:, None, ...]
-                                grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
-                                self.logger.experiment.add_image('0_input', grid, 0)
+                    if self.current_epoch == 0:
+                            myim = torch.tensor(np.stack((np.abs(_x_gt), np.angle(_x_gt)), axis=0))[:, None, ...]
+                            grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
+                            self.logger.experiment.add_image('1_ground_truth', grid, 0)
+
+                            myim = torch.tensor(np.stack((np.abs(_x_adj), np.angle(_x_adj)), axis=0))[:, None, ...]
+                            grid = make_grid(myim, scale_each=True, normalize=True, nrow=8, pad_value=10)
+                            self.logger.experiment.add_image('0_input', grid, 0)
 
 
         if self.hparams.self_supervised:
