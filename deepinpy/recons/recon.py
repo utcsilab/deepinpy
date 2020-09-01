@@ -222,7 +222,6 @@ class Recon(pl.LightningModule):
         else:                
             return [self.optimizer], [self.scheduler]
 
-    @pl.data_loader
     def train_dataloader(self):
         """Creates a DataLoader object, with distributed training if specified in the hyperparameters.
 
@@ -230,10 +229,4 @@ class Recon(pl.LightningModule):
             A PyTorch DataLoader that has been configured according to the hyperparameters.
         """
 
-        if self.hparams.distributed_training:
-            sampler = torch.utils.data.distributed.DistributedSampler(self.D, shuffle=self.hparams.shuffle)
-            shuffle = False
-        else:
-            sampler = None
-            shuffle = self.hparams.shuffle
-        return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=shuffle, num_workers=0, drop_last=True, sampler=sampler)
+        return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=self.hparams.shuffle, num_workers=0, drop_last=True)

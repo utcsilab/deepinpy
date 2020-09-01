@@ -3,7 +3,7 @@
 
 from test_tube import HyperOptArgumentParser
 from pytorch_lightning import Trainer
-from pytorch_lightning.logging import TestTubeLogger
+from pytorch_lightning.loggers import TestTubeLogger
 
 import os
 import pathlib
@@ -24,7 +24,7 @@ def main_train(args, gpu_ids=None):
 
     if args.hyperopt:
         time.sleep(random.random()) # used to avoid race conditions with parallel jobs
-    tt_logger = TestTubeLogger(save_dir=args.logdir, name=args.name, debug=False, create_git_tag=False, version=args.version)
+    tt_logger = TestTubeLogger(save_dir=args.logdir, name=args.name, debug=False, create_git_tag=False, version=args.version, log_graph=False)
     tt_logger.log_hyperparams(args)
     save_path = './{}/{}/version_{}'.format(args.logdir, tt_logger.name, tt_logger.version)
     checkpoint_path = '{}/checkpoints'.format(save_path)
@@ -67,7 +67,7 @@ def main_train(args, gpu_ids=None):
         distributed_backend = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=None, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
 
     trainer.fit(M)
 
@@ -132,7 +132,6 @@ if __name__ == '__main__':
     numpy.random.seed(args.random_seed)
 
     if args.hyperopt:
-        args.distributed_training = False
         if args.gpu is None:
             args.optimize_parallel_cpu(main_train, nb_trials=args.num_trials, nb_workers=args.num_workers)
         else:
@@ -141,11 +140,6 @@ if __name__ == '__main__':
     else:
         if args.gpu is not None:
             gpu_ids = [int(a) for a in args.gpu.split(',')]
-            if len(gpu_ids) > 1:
-                args.distributed_training = True
-            else:
-                args.distributed_training = False
         else:
             gpu_ids = None
-            args.distributed_training = False
         main_train(args, gpu_ids=gpu_ids)
