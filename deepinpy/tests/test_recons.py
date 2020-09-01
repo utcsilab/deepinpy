@@ -45,6 +45,8 @@ args.config = None
 args.distributed_training = False
 args.num_epochs = 1
 args.lr_scheduler = -1
+args.checkpoint_init = None
+args.num_spatial_dimensions = 2
 
 class TestRecon(unittest.TestCase):
 
