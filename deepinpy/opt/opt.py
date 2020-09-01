@@ -41,7 +41,8 @@ def dot_batch(x1, x2):
         The dot products along each dimension of x1 and x2.
     """
 
-    return torch.sum(x1*x2, dim=list(range(1, len(x1.shape))))
+    batch = x1.shape[0]
+    return torch.reshape(x1*x2, (batch, -1)).sum(1)
 
 def ip_batch(x):
     """Finds the identity product of a multidimensional Tensor holding a batch of data.
