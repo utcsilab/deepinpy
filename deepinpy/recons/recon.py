@@ -18,6 +18,11 @@ from deepinpy.forwards import MultiChannelMRIDataset
 from torchvision.utils import make_grid
 from torch.optim import lr_scheduler 
 
+@torch.jit.script
+def calc_nrmse(gt, pred):
+    return (opt.ip_batch(pred - gt) / opt.ip_batch(gt)).sqrt().mean()
+
+
 class Recon(pl.LightningModule):
     """An abstract class for implementing system-model-optimization (SMO) constructions.
 
@@ -185,7 +190,7 @@ class Recon(pl.LightningModule):
         except:
             _lambda = 0
         _epoch = self.current_epoch
-        _nrmse = (opt.ip_batch(x_hat - imgs) / opt.ip_batch(imgs)).sqrt().mean().detach().requires_grad_(False)
+        _nrmse = calc_nrmse(imgs, x_hat).detach().requires_grad_(False)
         _num_cg = np.max(num_cg)
 
         log_dict = {
