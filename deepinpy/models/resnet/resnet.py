@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import torch
+import torch.nn
 
 from deepinpy.utils import utils
 
