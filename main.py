@@ -16,6 +16,7 @@ from deepinpy.callback import MyModelCheckpoint
 
 import torch
 torch.backends.cudnn.enabled = True
+torch.backends.cudnn.benchmark = True
 
 import random # used to avoid race conditions, intentionall unseeded
 import numpy.random
