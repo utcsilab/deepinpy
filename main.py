@@ -57,7 +57,7 @@ def main_train(args, gpu_ids=None):
 
     #print(M.network.ResNetBlocks[0].conv1.net[1].weight)
 
-    if args.cpu:
+    if gpu_ids is None:
         gpus = None
         distributed_backend = None # FIXME should this also be ddp?
     elif args.hyperopt:
@@ -96,7 +96,6 @@ if __name__ == '__main__':
     parser.add_argument('--name', action='store', dest='name', type=str, help='experiment name', default=1)
     parser.add_argument('--version', action='store', dest='version', type=int, help='version number', default=None)
     parser.add_argument('--gpu', action='store', dest='gpu', type=str, help='gpu number(s)', default=None)
-    parser.add_argument('--cpu', action='store_true', dest='cpu', help='Use CPU', default=False)
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
     parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
     parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
