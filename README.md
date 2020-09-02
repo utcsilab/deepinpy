@@ -3,7 +3,7 @@ Package for training deep inverse problems in Python
 
 This project is a __Work In Progress!__ We are looking for volunteers! Please see the issues page for open problems.
 
-[Getting Started](docs/getting_started.md) (work in progress)
+[Getting Started](docs/getting_started.md)
 
 ## Example Usage:
 ```bash

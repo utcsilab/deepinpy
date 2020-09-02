@@ -74,3 +74,78 @@ h5_write('mydata.h5', data)
 ```
 
 There is also a similar `h5_read` function to load the training set.
+
+## Config parameters
+DeepInPy is controlled by passing command-line arguments to the `main.py` function. To view the command-line args, you can run
+```bash
+python main.py --help
+```
+
+### Config file
+The recommended way to pass command-line args is through the use of a config file:
+```bash
+python main.py --config configs/example.json
+```
+The config file is a JSON-formatted file containing the names of the command-line args, and the values to pass. These args will automatically be logged to tensorboard, so that they can be queried/reused.
+
+Note: Not all command-line args will be used, as it depends on the specific model that you use. (TODO: organize command-line args by model/module).  
+Note 2: By default, DeepInPy will use the cpu for training. You should specify the GPUs to use otherwise
+
+The main config parameters that are necessary to run a training:
+- `data_file`: specifies the path to the data file in hdf5 format (see above section)
+- `recon`: the reconstruction method to use (for example, "modl", "cgsense", "resnet", etc.)
+- `network`: the neural network to use within the recon, if applicable (for example, "ResNet")
+
+Other config parameters that are not required, but strongly recommended to set:
+- `name`: name of the experiment, which will be tracked in tensorboard
+- `gpu`: specify a string of comma-separated gpu numbers for training (e.g. "0" or "0, 1")
+- `step`: step size, or learning rate, for training
+- `num_epochs`: number of training epochs to run
+- `shuffle`: true to shuffle the dataset
+- `num_data_sets`: controls the number of training samples to use for training
+- `stdev`: set to non-zero to add complex-valued white Gaussian noise to the data
+- `self_supervised`: set to true to evaluate the loss in the measurement domain
+
+### Distributed training
+It is possible to run simple distributed training, by splitting the training epoch over multiple GPUs/CPUs. For example, if the training set contains 100 samples and four GPUs are used, then each GPU will receive 25 training samples each epoch. 
+- To run distributed training on GPU, simple specify multiple GPUs in the config: `gpu: "0, 1, 2, 3"`
+- To run distributed training on CPU, do not set the `gpu` variable, and instead export the environment variable for OpenMP before running the code: `export OMP_NUM_THREADS=20`
+
+### Hyperparameter optimization
+The config can be used to enable hyperparameter optimization/tuning with support for parallelization across CPUs/GPUs. To enable hyperparameter optimization:
+- set `hyperopt` to true
+- set `num_workers` to the number of experiments to run in parallel. For example, with four GPUs, set `num_workers` to 4.
+- set `gpu` to the list of GPUs to use (or leave blank to use CPU)
+- set `num_trials` to the number of experiments to run. For example, set `num_trials` to 10 to run 10 experiments with different hyperparameters
+
+- Example: 100 trials using 4 GPUs with two experiments per GPU running at once:
+```json
+"hyperopt": true,
+"num_workers": 8,
+"gpu": "0, 1, 2, 3",
+"num_trials": 100
+```
+
+Currently, one must manually set which config options are tunable via hyperparameter optimization. DeepInPy uses TestTube to cotrol this. By default, the step size is the only tunable parameter, defined in `main.py`:
+```python
+parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, nb_samples=100, low=.0001, high=.001)
+```
+Notice that it is an `opt_range`, meaning that it will sample values between `low` and `high`. Also notice that `nb_samples=100`, meaning at most 100 different values will be sampled from this hyperparameter. Finally, notice that `tunable=True`. If we change this to `False`, then it will not be used for hyperparameter optimization
+
+For example, currently the solver is not tunable:
+```python
+parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="sgd")
+```
+If we change `tunable` to `True`, then hyperopt will choose between the values under `options` for each experiment.
+
+In this way, we can set multiple Hyperparameters to `tunable=True`. Then, each hyperopt experiment will choose one value from each parameter, and we can sweep a large number of parameters at once.
+
+The default policy is to use random search. This can also be modified by changing the strategy to grid search in the `HyperOptArgumentParser` argument:  
+From
+```python
+parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='random_search')
+```
+to
+```python
+parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='grid_search')
+```
