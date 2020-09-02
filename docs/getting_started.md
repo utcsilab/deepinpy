@@ -4,7 +4,7 @@ This document is intended to show how to get started with a training experiment.
 In the current setup, the training is driven by a __data__ file and a __config__ file. The data file specifies the training data. the config file specifies the training procedure. Right now, the config file has options for every training procedure implemented, even though many are only relevant to a specific training algorithm, model, etc.
 
 ## Data format:
-DeepInPy excepts a complex-valued, multi-channel MRI format. Even when the data are single-coil, the format should be followed.
+DeepInPy expects a complex-valued, multi-channel MRI format. Even when the data are single-coil, the format should be followed.
 
 The data format is a h5 file, consisting of the following fields:
 ```bash
@@ -14,9 +14,9 @@ maps: [Ntraining, Ncoil, N1, N2, ..., NT, X, Y, Z]: np.complex
 ksp: [Ntraining, Ncoil, N1, N2, ..., NT, X, Y, Z]: np.complex
 ```
 
-`Ntraining` is the number of training examples. If `Ntraining=1`, it should still be included as a singleton dimension.  
-`N1`, `N2, ..., `NT` are higher-order dimensions, and can be used for multi-phase data (e.g. temporal, contrast, coefficients, phases, etc.). These dimensions are optional and can be excluded
-`X`, `Y`, `Z` are spatial dimensions. In the case of 2D data, the `Z` dimension can be excluded.
+- `Ntraining` is the number of training examples. If `Ntraining=1`, it should still be included as a singleton dimension.  
+- `N1`, `N2`, ..., `NT` are higher-order dimensions, and can be used for multi-phase data (e.g. temporal, contrast, coefficients, phases, etc.). These dimensions are optional and can be excluded.
+- `X`, `Y`, `Z` are spatial dimensions. In the case of 2D data, the `Z` dimension can be excluded.
 
 Except for the masks, all data should be stored as complex-valued arrays.
 
