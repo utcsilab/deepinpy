@@ -49,12 +49,6 @@ tensorboard --logdir logs --port 1234 --samples_per_plugin images=500
 
 DeepInPy can leverage packages such as [SigPy][sigpy] and [Torch KB NUFFT][torchkbnufft] to create the (non-Cartesian) forward models and other signal processing functions. 
 
-DeepInPy has capabilities for learning rate scheduling. An example usage has been included in the default config. The general use is:
-	
-	"lr_scheduler": [x,y]
-
-where "x" is the epoch when the multiplicative factor will be applied and "y" is the multiplicative factor that scales the current learning rate. Each successive x number of epochs, e.g. 2x, 3x, 4x etc will also scale the learning rate.
-
 ## Installation
 
 ```bash

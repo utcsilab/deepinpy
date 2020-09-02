@@ -149,3 +149,10 @@ to
 ```python
 parser = HyperOptArgumentParser(usage=usage_str, description=description_str, formatter_class=argparse.ArgumentDefaultsHelpFormatter, strategy='grid_search')
 ```
+
+### Learning rate scheduler
+DeepInPy has capabilities for learning rate scheduling. An example usage has been included in the default config. The general use is:
+	
+	"lr_scheduler": [x,y]
+
+where "x" is the epoch when the multiplicative factor will be applied and "y" is the multiplicative factor that scales the current learning rate. Each successive x number of epochs, e.g. 2x, 3x, 4x etc will also scale the learning rate.
