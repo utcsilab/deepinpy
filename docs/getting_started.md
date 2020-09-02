@@ -1,5 +1,4 @@
-# DeepInPy
-## Getting Started
+# DeepInPy -- Getting Started
 This document is intended to show how to get started with a training experiment. 
 
 In the current setup, the training is driven by a __data__ file and a __config__ file. The data file specifies the training data. the config file specifies the training procedure. Right now, the config file has options for every training procedure implemented, even though many are only relevant to a specific training algorithm, model, etc.
@@ -48,7 +47,14 @@ ksp: [100, 8, 20, 256, 256]: np.complex
 Note that the `maps` array can be all-ones in this case
 
 ### Example: 2D 8-coil data, solving for each channel separately
-TBD
+We use the same interface by treating the coil dimension as a higher-order dimension, and creating an all-ones maps array.
+We tell the code that it is "one-channel" data with a higher-order dimension equal to 8
+```bash
+imgs: [100, 8, 256, 256]: np.complex
+masks: [100, 8, 256, 256]: np.float
+maps: [100, 1, 8, 256, 256]: np.complex
+ksp: [100, 1, 8, 256, 256]: np.complex
+```
 
 ### Writing/reading data file
 To write a data file, you can use the `deepinpy.utils.utils.h5_write` function. The function takes the path to the target h5 file and a dictionary of key-value pairs:
