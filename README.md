@@ -6,8 +6,13 @@ This project is a __Work In Progress!__ We are looking for volunteers! Please se
 [Getting Started](docs/getting_started.md)
 
 ## Example Usage:
+- Example for running a single experiment:
 ```bash
 python main.py --config configs/example.json
+```
+- Example for running hyperparamter optimization experiments
+```bash
+python main.py --config configs/example_hyperopt.json
 ```
 
 ## Purpose:
