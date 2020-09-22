@@ -3,8 +3,8 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
+import torch.cuda
 from test_tube import HyperOptArgumentParser
-
 from pytorch_lightning import Trainer
 
 import argparse
@@ -60,9 +60,10 @@ class TestRecon(unittest.TestCase):
             trainer = Trainer(max_epochs=args.num_epochs, gpus=None, logger=False)
             trainer.fit(M)
 
-            print('  GPU:')
-            trainer = Trainer(max_epochs=args.num_epochs, gpus=[0], logger=False)
-            trainer.fit(M)
+            if torch.cuda.device_count() > 0:
+                print('  GPU:')
+                trainer = Trainer(max_epochs=args.num_epochs, gpus=[0], logger=False)
+                trainer.fit(M)
 
             #FIXME: check ddp
 
