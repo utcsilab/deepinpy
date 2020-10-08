@@ -42,8 +42,7 @@ args.self_supervised = False
 args.self_supervised_adjoint = False
 args.hyperopt = False
 args.config = None
-args.distributed_training = False
-args.num_epochs = 1
+args.num_epochs = 2
 args.lr_scheduler = -1
 args.checkpoint_init = None
 args.num_spatial_dimensions = 2
@@ -54,18 +53,18 @@ class TestRecon(unittest.TestCase):
         args.Dataset = MultiChannelMRIDataset
         for recon in [CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon]:
             print('Testing Recon {}'.format(recon))
-            M = recon(args)
 
             print('  CPU:')
+            M = recon(args)
             trainer = Trainer(max_epochs=args.num_epochs, gpus=None, logger=False)
             trainer.fit(M)
 
             if torch.cuda.device_count() > 0:
                 print('  GPU:')
+                M = recon(args)
                 trainer = Trainer(max_epochs=args.num_epochs, gpus=[0], logger=False)
                 trainer.fit(M)
 
-            #FIXME: check ddp
 
 if __name__ == '__main__':
     unittest.main()
