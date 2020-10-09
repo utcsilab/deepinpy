@@ -201,9 +201,13 @@ class Recon(pl.LightningModule):
                 'max_num_cg': _num_cg,
                 'val_loss': 0.,
                 }
+
+        if self.logger:
+            for key in log_dict.keys():
+                self.logger.experiment.add_scalar(key, log_dict[key], self.global_step)
+
         return {
                 'loss': loss,
-                'log': log_dict,
                 'progress_bar': log_dict,
                 }
 
