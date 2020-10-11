@@ -105,7 +105,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         if verbose:
             print('{i}: {rsnew}'.format(i=i, rsnew=utils.itemize(torch.sqrt(rsnew))))
 
-        if rsnew.max() < eps:
+        if rsnew.max() < eps_squared:
             break
 
         if l2lam > 0:
