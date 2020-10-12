@@ -4,6 +4,8 @@
 from test_tube import HyperOptArgumentParser
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TestTubeLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 
 import os
 import pathlib
@@ -12,7 +14,6 @@ import argparse
 import time
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
-from deepinpy.callback import MyModelCheckpoint
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -28,13 +29,14 @@ def main_train(args, gpu_ids=None):
     tt_logger = TestTubeLogger(save_dir=args.logdir, name=args.name, debug=False, create_git_tag=False, version=args.version, log_graph=False)
     tt_logger.log_hyperparams(args)
     save_path = './{}/{}/version_{}'.format(args.logdir, tt_logger.name, tt_logger.version)
+    print('save path is', save_path)
     checkpoint_path = '{}/checkpoints'.format(save_path)
     pathlib.Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
     if args.save_all_checkpoints:
         save_top_k = -1
     else:
         save_top_k = 1
-    checkpoint_callback = MyModelCheckpoint(checkpoint_path, 'epoch', save_top_k=save_top_k, mode='max') 
+    checkpoint_callback = ModelCheckpoint(checkpoint_path, 'epoch', save_top_k=save_top_k, mode='max', verbose=False)
 
     if args.recon == 'cgsense':
         MyRecon = CGSenseRecon
