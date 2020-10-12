@@ -122,9 +122,9 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
     def _load_data(self, idx):
         if self.inverse_crime:
             #imgs, maps, masks = load_data_legacy(idx, self.data_file, self.gen_masks)
-            imgs, maps, masks = load_data(idx, self.data_file, self.gen_masks)
+            imgs, maps, masks, noise = load_data(idx, self.data_file, self.gen_masks)
         else:
-            imgs, maps, masks, ksp = load_data_ksp(idx, self.data_file, self.gen_masks)
+            imgs, maps, masks, ksp, noise = load_data_ksp(idx, self.data_file, self.gen_masks)
         if self.scale_data:
             ## FIXME: batch mode
             assert not self.scale_data, 'SEE FIXME'
@@ -137,22 +137,23 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
 
         if self.inverse_crime:
             assert not self.noncart, 'FIXME: forward sim of NUFFT'
-            out = self._sim_data(imgs, maps, masks)
+            out = self._sim_data(imgs, maps, masks, noise)
         else:
-            out = self._sim_data(imgs, maps, masks, ksp)
+            out = self._sim_data(imgs, maps, masks, noise, ksp)
 
         if not self.noncart:
             maps = fftmod(maps)
         return imgs, maps, masks, out
 
-    def _sim_data(self, imgs, maps, masks, ksp=None):
+    def _sim_data(self, imgs, maps, masks, noise, ksp=None):
 
         # N, nc, nx, ny
-        if self.noncart:
-            assert ksp is not None, 'FIXME: NUFFT forward sim'
-            noise = np.random.randn(*ksp.shape) + 1j * np.random.randn(*ksp.shape)
-        else:
-            noise = np.random.randn(*maps.shape) + 1j * np.random.randn(*maps.shape)
+        if noise is None:
+            if self.noncart:
+                assert ksp is not None, 'FIXME: NUFFT forward sim'
+                noise = np.random.randn(*ksp.shape) + 1j * np.random.randn(*ksp.shape)
+            else:
+                noise = np.random.randn(*maps.shape) + 1j * np.random.randn(*maps.shape)
 
         if self.inverse_crime and ksp is None:
             out = masks[:,None,:,:] * (fft2uc(imgs[:,None,:,:] * maps) + 1 / np.sqrt(2) * self.stdev * noise)
@@ -177,11 +178,17 @@ def load_data(idx, data_file, gen_masks=False):
         imgs = np.array(F['imgs'][idx,...], dtype=np.complex)
         maps = np.array(F['maps'][idx,...], dtype=np.complex)
         masks = np.array(F['masks'][idx,...], dtype=np.float)
+        if 'noise' in F.keys():
+            noise = np.array(F['noise'][idx,...], dtype=np.complex)
+        else:
+            noise = None
 
     # special case for batch_size=1
     if len(masks.shape) == 2:
         imgs, maps, masks = imgs[None,...], maps[None,...], masks[None,...]
-    return imgs, maps, masks
+        if noise is not None:
+            noise = noise[None,...]
+    return imgs, maps, masks, noise
 
 def load_data_ksp(idx, data_file, gen_masks=False):
     with h5py.File(data_file, 'r') as F:
@@ -189,11 +196,17 @@ def load_data_ksp(idx, data_file, gen_masks=False):
         maps = np.array(F['maps'][idx,...], dtype=np.complex)
         ksp = np.array(F['ksp'][idx,...], dtype=np.complex)
         masks = np.array(F['masks'][idx,...], dtype=np.float)
+        if 'noise' in F.keys():
+            noise = np.array(F['noise'][idx,...], dtype=np.float)
+        else:
+            noise = None
 
     # special case for batch_size=1
     if len(masks.shape) == 2:
         imgs, maps, masks, ksp = imgs[None,...], maps[None,...], masks[None,...], ksp[None,...]
-    return imgs, maps, masks, ksp
+        if noise is not None:
+            noise = noise[None,...]
+    return imgs, maps, masks, ksp, noise
 
 
 def load_data_cached(data_file):
