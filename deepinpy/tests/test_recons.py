@@ -6,6 +6,7 @@ import numpy.testing as npt
 import torch.cuda
 from test_tube import HyperOptArgumentParser
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 import argparse
 
@@ -48,6 +49,9 @@ args.checkpoint_init = None
 args.num_spatial_dimensions = 2
 args.num_accumulate = 1
 args.clip_grad = 0
+
+# try to make a checkpoint logger
+checkpoint_callback = ModelCheckpoint('/dev/null', 'epoch', save_top_k=-1, mode='max', verbose=False)
 
 class TestRecon(unittest.TestCase):
 

@@ -6,7 +6,6 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TestTubeLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-
 import os
 import pathlib
 import argparse
