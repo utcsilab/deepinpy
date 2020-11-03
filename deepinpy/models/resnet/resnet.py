@@ -191,6 +191,7 @@ class ResNet(torch.nn.Module):
         self.topk = topk
 
     def forward(self, x):
+        x = torch.view_as_real(x)
         ndims = len(x.shape)
         permute_shape = list(range(ndims))
         permute_shape.insert(1, permute_shape.pop(-1))
@@ -216,7 +217,7 @@ class ResNet(torch.nn.Module):
         permute_shape = list(range(ndims)) # we want 0,2,3,4,1
         permute_shape.insert(ndims-1, permute_shape.pop(1))
         x = x.permute(permute_shape)
-        return x
+        return torch.view_as_complex(x.contiguous())
 
     def _build_model(self):
         ResNetBlocks = torch.nn.ModuleList()

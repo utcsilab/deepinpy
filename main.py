@@ -47,6 +47,9 @@ def main_train(args, gpu_ids=None):
         MyRecon = ResNetRecon
     elif args.recon == 'dbp':
         MyRecon = DeepBasisPursuitRecon
+    else:
+        print('error! undefined recon')
+        sys.exit(-1)
 
     M = MyRecon(args)
 

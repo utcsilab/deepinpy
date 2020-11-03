@@ -12,7 +12,6 @@ import pytorch_lightning as pl
 
 from deepinpy.utils import utils
 from deepinpy import opt
-import deepinpy.utils.complex as cp
 from deepinpy.forwards import MultiChannelMRIDataset
 
 from torchvision.utils import make_grid
@@ -20,7 +19,8 @@ from torch.optim import lr_scheduler
 
 @torch.jit.script
 def calc_nrmse(gt, pred):
-    return (opt.ip_batch(pred - gt) / opt.ip_batch(gt)).sqrt().mean()
+    resid = pred - gt
+    return torch.real((opt.dot_batch(torch.conj(resid), resid)) / torch.real(opt.dot_batch(torch.conj(gt), gt))).sqrt().mean()
 
 
 class Recon(pl.LightningModule):
@@ -49,13 +49,16 @@ class Recon(pl.LightningModule):
     def _init_hparams(self, hparams):
         self.hparams = hparams
 
-        self._loss_fun = torch.nn.MSELoss(reduction='sum')
+        #self._loss_fun = torch.nn.MSELoss(reduction='sum')
 
         if hparams.abs_loss:
             self.loss_fun = self._abs_loss_fun
         else:
             self.loss_fun = self._loss_fun
 
+    def _loss_fun(self, pred, gt):
+        resid = pred - gt
+        return torch.mean(torch.sum(torch.real(torch.conj(resid) * resid)))
 
     def _build_data(self):
         self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
@@ -143,9 +146,9 @@ class Recon(pl.LightningModule):
                     else:
                         x_adj = self.x_adj
 
-                    _x_hat = utils.t2n(x_hat[_idx,...]) 
-                    _x_gt = utils.t2n(imgs[_idx,...])
-                    _x_adj = utils.t2n(x_adj[_idx,...]) 
+                    _x_hat = utils.t2n2(x_hat[_idx,...]) 
+                    _x_gt = utils.t2n2(imgs[_idx,...])
+                    _x_adj = utils.t2n2(x_adj[_idx,...]) 
 
                     if len(_x_hat.shape) > 2:
                         _d = tuple(range(len(_x_hat.shape)-2))

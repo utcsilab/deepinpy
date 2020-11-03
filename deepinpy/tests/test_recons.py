@@ -52,12 +52,13 @@ args.clip_grad = 0
 
 # try to make a checkpoint logger
 checkpoint_callback = ModelCheckpoint('/dev/null', 'epoch', save_top_k=-1, mode='max', verbose=False)
+recon_list = [CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon]
 
 class TestRecon(unittest.TestCase):
 
     def test_recon(self):
         args.Dataset = MultiChannelMRIDataset
-        for recon in [CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon]:
+        for recon in recon_list:
             print('Testing Recon {}'.format(recon))
 
             print('  CPU:')

@@ -10,7 +10,6 @@ import pathlib
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-import deepinpy.utils.complex as cp
 from deepinpy.utils.utils import fftmod, fftshift, fft2uc, ifft2uc
 
 class MultiChannelMRIDataset(torch.utils.data.Dataset):
@@ -115,10 +114,10 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
             out = out.squeeze(0)
 
         data = {
-                'imgs': cp.c2r(imgs).astype(np.float32),
-                'maps': cp.c2r(maps).astype(np.float32),
+                'imgs': imgs.astype(np.complex64),
+                'maps': maps.astype(np.complex64),
                 'masks': masks.astype(np.float32),
-                'out': cp.c2r(out).astype(np.float32)
+                'out': out.astype(np.complex64)
                 }
 
         return idx, data
