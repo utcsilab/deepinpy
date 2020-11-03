@@ -35,7 +35,7 @@ class DeepBasisPursuitRecon(Recon):
         self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
-        eps = opt.ip_batch(self.A.maps.shape[1] * self.A.mask.sum((1, 2))).sqrt() * self.hparams.stdev
+        eps = (self.A.maps.shape[1] * self.A.mask.sum((1,2))) * self.hparams.stdev
         x = self.A.adjoint(y)
         z = self.A(x)
         z_old = z
@@ -63,16 +63,24 @@ class DeepBasisPursuitRecon(Recon):
                 Ax_plus_u = self.A(x) + u
                 z_old = z
                 z = y + opt.l2ball_proj_batch(Ax_plus_u - y, eps)
+                z = y
                 u = Ax_plus_u - z
 
                 # check ADMM convergence
-                Ax = self.A(x)
-                r_norm = opt.ip_batch(Ax-z).sqrt()
-                s_norm = opt.ip_batch(self.l2lam * self.A.adjoint(z - z_old)).sqrt()
-                if (r_norm + s_norm).max() < 1E-2:
-                    if self.debug_level > 0:
-                        tqdm.tqdm.write('stopping early, a={}'.format(a))
-                    break
+                with torch.no_grad():
+                    Ax = self.A(x)
+                    tmp = Ax - z
+                    tmp = tmp.contiguous()
+                    r_norm = torch.real(opt.dot_batch(torch.conj(tmp), tmp)).sqrt()
+
+                    tmp = self.l2lam * self.A.adjoint(z - z_old)
+                    tmp = tmp.contiguous()
+                    s_norm = torch.real(opt.dot_batch(torch.conj(tmp), tmp)).sqrt()
+
+                    if (r_norm + s_norm).max() < 1E-2:
+                        if self.debug_level > 0:
+                            tqdm.tqdm.write('stopping early, a={}'.format(a))
+                        break
         return x
 
     def get_metadata(self):

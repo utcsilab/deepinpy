@@ -2,9 +2,8 @@
 """Data transformation and processing class with functions."""
 
 import numpy as np
+import torch.fft
 import torch
-
-import deepinpy.utils.complex as cp
 
 class MultiChannelMRI(torch.nn.Module):
     """Class which implements a forward operator (matrix A) for data processing and transformation.
@@ -154,19 +153,26 @@ class MultiChannelMRI(torch.nn.Module):
         #return self.normal_fun(x)
 
 def maps_forw(img, maps):
-    return cp.zmul(img[:,None,...], maps)
+    return img[:,None,...] * maps
 
 def maps_adj(cimg, maps):
-    return torch.sum(cp.zmul(cp.zconj(maps), cimg), 1, keepdim=False)
+    return torch.sum(torch.conj(maps) * cimg, 1, keepdim=False)
 
 def fft_forw(x, ndim=2):
-    return torch.fft(x, signal_ndim=ndim, normalized=True)
+    return fft_private(x, torch.fft.fftn, ndim)
 
 def fft_adj(x, ndim=2):
-    return torch.ifft(x, signal_ndim=ndim, normalized=True)
+    return fft_private(x, torch.fft.ifftn, ndim)
+
+def fft_private(x, fft_fun, ndim=2):
+    if ndim == 2:
+        dim = [-1, -2]
+    else:
+        dim = [-1, -2, -3]
+    return fft_fun(x, dim=dim, norm='ortho')
 
 def mask_forw(y, mask):
-    return y * mask[:,None,...,None]
+    return y * mask[:,None,...]
     
 def sense_forw(img, maps, mask, ndim=2): 
     return mask_forw(fft_forw(maps_forw(img, maps), ndim), mask)

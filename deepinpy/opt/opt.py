@@ -18,20 +18,20 @@ def dot(x1, x2):
 
     return torch.sum(x1*x2)
 
-def ip(x):
-    """Finds the identity product of a vector.
+def dot1(x):
+    """Finds the dot product of a vector with itself
 
     Args:
         x (Tensor): The input vector.
 
     Returns:
-        The identity product of x.
+        The dot product of x and x.
     """
 
     return dot(x, x)
 
 def dot_batch(x1, x2):
-    """Finds the dot product of two multidimensional Tensors holding batches of data.
+    """Finds the dot product of two multidimensional Tensors, preserving the batch dimension.
 
     Args:
         x1 (Tensor): The first multidimensional Tensor.
@@ -44,14 +44,15 @@ def dot_batch(x1, x2):
     batch = x1.shape[0]
     return torch.reshape(x1*x2, (batch, -1)).sum(1)
 
-def ip_batch(x):
-    """Finds the identity product of a multidimensional Tensor holding a batch of data.
+
+def dot1_batch(x):
+    """Finds the dot product of a multidimensional Tensors with itself, preserving the batch dimension.
 
     Args:
-        x (Tensor): The tensor who’s batch identity product will be computed.
+        x (Tensor): The multidimensional Tensor.
 
     Returns:
-        The batch identity product of x.
+        The dot products along each non-batch dimension of x and x.
     """
 
     return dot_batch(x, x)
@@ -69,11 +70,12 @@ def l2ball_proj_batch(x, eps):
 
     #print('l2ball_proj_batch')
     reshape = (-1,) + (1,) * (len(x.shape) - 1)
-    q1 = ip_batch(x).sqrt()
+    x = x.contiguous()
+    q1 = torch.real(dot_batch(torch.conj(x), x)).sqrt()
     #print(eps,q1)
     q1_clamp = torch.min(q1, eps)
 
     z = x * q1_clamp.reshape(reshape) / (1e-8 + q1.reshape(reshape))
-    #q2 = ip_batch(z).sqrt()
+    #q2 = dot1_batch(z).sqrt()
     #print(eps,q1,q2)
     return z

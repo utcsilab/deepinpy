@@ -5,7 +5,6 @@ import numpy as np
 import h5py
 import scipy
 
-import deepinpy.utils.complex as cp
 
 '''
 Utility functions """
@@ -61,18 +60,6 @@ def topk(inp, k, dim):
     _topk = torch.gather(inp, dim, _idx).sign() * _topk
     out = 0*inp
     return out.scatter_(dim, _idx, _topk)
-
-def t2n(x):
-    """Converts a 2-channel real Tensor into a numpy array containing complex values.
-
-    Args:
-        x (Tensor): The Tensor to be converted.
-
-    Returns:
-        A numpy array containing complex-valued information from x.
-    """
-
-    return cp.r2c(t2n2(x))
 
 def t2n2(x):
     """Converts a Tensor into a numpy array directly.
