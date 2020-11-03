@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, nb_samples=100, low=.0001, high=.001)
     parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=False, low=.0001, high=100, help='initial l2 regularization')
-    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="sgd")
+    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="adam")
     parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=False, low=1, high=20, help='max number of conjgrad iterations', default=10)
     parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=False, low=1, high=20, help='batch size', default=2)
     parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=False, low=1, high=10, nb_samples=4, help='number of unrolls', default=4)
