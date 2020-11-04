@@ -96,6 +96,8 @@ def itemize(x):
         Python list containing the itemized contents of the tensor.
     """
 
+    if len(x.shape) < 1:
+        x = x[None]
     if x.shape[0] > 1:
         return [xx.item() for xx in x]
     else:

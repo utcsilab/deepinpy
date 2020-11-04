@@ -6,6 +6,8 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TestTubeLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 
+from pytorch_lightning import seed_everything
+
 import os
 import pathlib
 import argparse
@@ -69,7 +71,7 @@ def main_train(args, gpu_ids=None):
         distributed_backend = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, early_stop_callback=None, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
 
     trainer.fit(M)
 
@@ -131,6 +133,7 @@ if __name__ == '__main__':
 
     torch.manual_seed(args.random_seed)
     numpy.random.seed(args.random_seed)
+    seed_everything(args.random_seed)
 
     if args.hyperopt:
         if args.gpu is None:

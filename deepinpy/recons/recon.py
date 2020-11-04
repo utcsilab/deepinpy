@@ -44,6 +44,7 @@ class Recon(pl.LightningModule):
         self._init_hparams(hparams)
         self._build_data()
         self.scheduler = None
+        self.log_dict = None
 
     def _init_hparams(self, hparams):
         self.hparams = hparams
@@ -206,11 +207,19 @@ class Recon(pl.LightningModule):
             for key in log_dict.keys():
                 self.logger.experiment.add_scalar(key, log_dict[key], self.global_step)
 
-        return {
-                'loss': loss,
-                'progress_bar': log_dict,
-                }
+        self.log_dict = log_dict
 
+        return loss
+
+    def get_progress_bar_dict(self):
+        items = super().get_progress_bar_dict()
+        if self.log_dict:
+            for key in self.log_dict.keys():
+                if type(self.log_dict[key]) == torch.Tensor:
+                    items[key] = utils.itemize(self.log_dict[key])
+                else:
+                    items[key] = self.log_dict[key]
+        return items
 
     def configure_optimizers(self):
         """Determines whether to use Adam or SGD depending on hyperparameters.
