@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="deepinp"
-    version="0.0.1",
+    name="deepinpy",
+    version="0.1.0",
     author="Jon Tamir",
     author_email="jtamir@utexas.edu",
     description="Deep inverse problems in Python",
