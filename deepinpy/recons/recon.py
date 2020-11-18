@@ -105,6 +105,16 @@ class Recon(pl.LightningModule):
         """
         raise NotImplementedError
 
+    def log_metadata(self, log_dict, key, fun=None):
+        try:
+            val = self.get_metadata()[key]
+            if fun is not None:
+                val = fun(val)
+            log_dict[key] = val
+        except KeyError:
+            pass
+        return log_dict
+
     # FIXME: batch_nb parameter appears unused.
     def training_step(self, batch, batch_nb):
         """Defines a training step solving deep inverse problems, including batching, performing a forward pass through
@@ -126,11 +136,6 @@ class Recon(pl.LightningModule):
         self.batch(data)
 
         x_hat = self.forward(inp)
-
-        try:
-            num_cg = self.get_metadata()['num_cg']
-        except KeyError:
-            num_cg = 0
 
         if self.logger and (self.current_epoch % self.hparams.save_every_N_epochs == 0 or self.current_epoch == self.hparams.num_epochs - 1):
             _b = inp.shape[0]
@@ -196,16 +201,21 @@ class Recon(pl.LightningModule):
             _lambda = 0
         _epoch = self.current_epoch
         _nrmse = calc_nrmse(imgs, x_hat).detach().requires_grad_(False)
-        _num_cg = np.max(num_cg)
+
 
         log_dict = {
                 'lambda': _lambda,
                 'train_loss': _loss,
                 'epoch': self.current_epoch,
                 'nrmse': _nrmse, 
-                'max_num_cg': _num_cg,
                 'val_loss': 0.,
                 }
+
+        # FIXME: let the user specify this list
+        log_dict = self.log_metadata(log_dict, 'num_cg', fun=np.max)
+        keys_list = ['mean_residual_norm', 'mean_eps']
+        for key in keys_list:
+            log_dict = self.log_metadata(log_dict, key)
 
         if self.logger:
             for key in log_dict.keys():
