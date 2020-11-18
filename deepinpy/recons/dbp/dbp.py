@@ -38,6 +38,9 @@ class DeepBasisPursuitRecon(Recon):
             self.eps = (self.A.maps.shape[1] * torch.sum(self.A.mask.reshape((self.A.mask.shape[0], -1)), dim=1)).sqrt() * self.hparams.stdev
 
     def forward(self, y):
+        with torch.no_grad():
+            self.mean_eps = torch.mean(self.eps)
+            #print('epsilon is {}'.format(self.eps))
         x = self.A.adjoint(y)
         z = self.A(x)
         z_old = z
@@ -82,9 +85,13 @@ class DeepBasisPursuitRecon(Recon):
                         if self.debug_level > 0:
                             tqdm.tqdm.write('stopping early, a={}'.format(a))
                         break
+                    tmp = y - Ax
+                    self.mean_residual_norm = torch.mean(torch.sqrt(torch.real(opt.dot_batch(torch.conj(tmp), tmp))))
         return x
 
     def get_metadata(self):
         return {
                 'num_cg': self.num_cg.ravel(),
+                'mean_residual_norm': self.mean_residual_norm,
+                'mean_eps': self.mean_eps,
                 }
