@@ -20,7 +20,7 @@ from torch.optim import lr_scheduler
 @torch.jit.script
 def calc_nrmse(gt, pred):
     resid = pred - gt
-    return torch.real((opt.dot_batch(torch.conj(resid), resid)) / torch.real(opt.dot_batch(torch.conj(gt), gt))).sqrt().mean()
+    return (torch.real(opt.zdot_single_batch(resid)) / torch.real(opt.zdot_single_batch(gt))).sqrt().mean()
 
 
 class Recon(pl.LightningModule):
@@ -58,7 +58,8 @@ class Recon(pl.LightningModule):
 
     def _loss_fun(self, pred, gt):
         resid = pred - gt
-        return torch.mean(torch.sum(torch.real(torch.conj(resid) * resid)))
+        #return torch.mean(torch.sum(torch.real(torch.conj(resid) * resid)))
+        return torch.mean(torch.real(opt.zdot_single_batch(resid)))
 
     def _build_data(self):
         self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)

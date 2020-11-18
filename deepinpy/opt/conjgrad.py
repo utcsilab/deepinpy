@@ -3,7 +3,7 @@
 import torch
 
 from deepinpy.utils import utils
-from deepinpy.opt import dot_batch, dot1_batch
+from deepinpy.opt import dot_batch, dot_single_batch
 
 class ConjGrad(torch.nn.Module):
     """A class which implements conjugate gradient descent as a torch module.
@@ -91,7 +91,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         r = b - Aop_fun(x)
     p = r
 
-    rsnot = dot1_batch(r)
+    rsnot = dot_single_batch(r)
     rsold = rsnot
     rsnew = rsnot
 
@@ -121,7 +121,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         x = x + alpha * p
         r = r - alpha * Ap
 
-        rsnew = dot1_batch(r)
+        rsnew = dot_single_batch(r)
 
         beta = (rsnew / rsold).reshape(reshape)
 

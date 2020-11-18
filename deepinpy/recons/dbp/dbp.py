@@ -31,11 +31,13 @@ class DeepBasisPursuitRecon(Recon):
         masks = data['masks']
         inp = data['out']
 
-        self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
-        self.x_adj = self.A.adjoint(inp)
+        with torch.no_grad():
+            self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
+            self.x_adj = self.A.adjoint(inp)
+
+            self.eps = (self.A.maps.shape[1] * torch.sum(self.A.mask.reshape((self.A.mask.shape[0], -1)), dim=1)).sqrt() * self.hparams.stdev
 
     def forward(self, y):
-        eps = (self.A.maps.shape[1] * self.A.mask.sum((1,2))) * self.hparams.stdev
         x = self.A.adjoint(y)
         z = self.A(x)
         z_old = z
@@ -62,8 +64,7 @@ class DeepBasisPursuitRecon(Recon):
 
                 Ax_plus_u = self.A(x) + u
                 z_old = z
-                z = y + opt.l2ball_proj_batch(Ax_plus_u - y, eps)
-                z = y
+                z = y + opt.l2ball_proj_batch(Ax_plus_u - y, self.eps)
                 u = Ax_plus_u - z
 
                 # check ADMM convergence
