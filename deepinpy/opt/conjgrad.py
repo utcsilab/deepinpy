@@ -3,7 +3,7 @@
 import torch
 
 from deepinpy.utils import utils
-from deepinpy.opt import dot_batch, dot_single_batch
+from deepinpy.opt import dot_batch, dot_single_batch, zdot_batch, zdot_single_batch
 
 class ConjGrad(torch.nn.Module):
     """A class which implements conjugate gradient descent as a torch module.
@@ -66,19 +66,19 @@ class ConjGrad(torch.nn.Module):
                 }
 
 def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
-    """A function that implements batched conjugate gradient descent; assumes the first index is batch size.
+    """Conjugate Gradient Algorithm applied to batches; assumes the first index is batch size.
 
     Args:
-    	x (Tensor): The initial input to the algorithm.
+    x (Tensor): The initial input to the algorithm.
     b (Tensor): The residual vector
-    Aop_fun (func): A function performing the A matrix operation.
+    Aop_fun (func): A function performing the normal equations, A.H * A
     max_iter (int): Maximum number of times to run conjugate gradient descent.
     l2lam (float): The L2 lambda, or regularization parameter (must be positive).
     eps (float): Determines how small the residuals must be before termination…
     verbose (bool): If true, prints extra information to the console.
 
     Returns:
-    	A tuple containing the updated vector x and the number of iterations performed.
+    	A tuple containing the output vector x and the number of iterations performed.
     """
 
     # explicitly remove r from the computational graph
@@ -112,6 +112,7 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
             Ap = Aop_fun(p) + l2lam * p
         else:
             Ap = Aop_fun(p)
+
         pAp = dot_batch(p, Ap)
 
         #print(utils.itemize(pAp))
@@ -138,19 +139,19 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
 
 
 def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
-    """A function that implements batched conjugate gradient descent; assumes the first index is batch size.
+    """Conjugate Gradient Algorithm for a complex vector space applied to batches; assumes the first index is batch size.
 
     Args:
-    	x (Tensor): The initial input to the algorithm.
-    b (Tensor): The residual vector
-    Aop_fun (func): A function performing the A matrix operation.
+    x (complex-valued Tensor): The initial input to the algorithm.
+    b (complex-valued Tensor): The residual vector
+    Aop_fun (func): A function performing the normal equations, A.H * A
     max_iter (int): Maximum number of times to run conjugate gradient descent.
     l2lam (float): The L2 lambda, or regularization parameter (must be positive).
     eps (float): Determines how small the residuals must be before termination…
     verbose (bool): If true, prints extra information to the console.
 
     Returns:
-    	A tuple containing the updated vector x and the number of iterations performed.
+    	A tuple containing the output vector x and the number of iterations performed.
     """
 
     # explicitly remove r from the computational graph
@@ -163,7 +164,7 @@ def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         r = b - Aop_fun(x)
     p = r
 
-    rsnot = dot_batch(torch.conj(r), r).real
+    rsnot = zdot_single_batch(r).real
     rsold = rsnot
     rsnew = rsnot
 
@@ -186,7 +187,7 @@ def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         else:
             Ap = Aop_fun(p)
 
-        pAp = dot_batch(torch.conj(p), Ap)
+        pAp = zdot_batch(p, Ap)
 
         #print(utils.itemize(pAp))
 
@@ -195,7 +196,7 @@ def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         x = x + alpha * p
         r = r - alpha * Ap
 
-        rsnew = dot_batch(torch.conj(r), r).real
+        rsnew = zdot_single_batch(r).real
 
         beta = (rsnew / rsold).reshape(reshape)
 
