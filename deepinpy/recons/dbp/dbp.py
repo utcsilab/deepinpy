@@ -75,18 +75,18 @@ class DeepBasisPursuitRecon(Recon):
                     Ax = self.A(x)
                     tmp = Ax - z
                     tmp = tmp.contiguous()
-                    r_norm = torch.real(opt.dot_batch(torch.conj(tmp), tmp)).sqrt()
+                    r_norm = torch.real(opt.zdot_single_batch(tmp)).sqrt()
 
                     tmp = self.l2lam * self.A.adjoint(z - z_old)
                     tmp = tmp.contiguous()
-                    s_norm = torch.real(opt.dot_batch(torch.conj(tmp), tmp)).sqrt()
+                    s_norm = torch.real(opt.zdot_single_batch(tmp)).sqrt()
 
                     if (r_norm + s_norm).max() < 1E-2:
                         if self.debug_level > 0:
                             tqdm.tqdm.write('stopping early, a={}'.format(a))
                         break
                     tmp = y - Ax
-                    self.mean_residual_norm = torch.mean(torch.sqrt(torch.real(opt.dot_batch(torch.conj(tmp), tmp))))
+                    self.mean_residual_norm = torch.mean(torch.sqrt(torch.real(opt.zdot_single_batch(tmp))))
         return x
 
     def get_metadata(self):
