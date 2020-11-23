@@ -61,6 +61,11 @@ conda install -c pytorch pytorch
 pip install -r requirements.txt
 ```
 
+### Unit tests
+```bash
+python -m unittest
+```
+
 ### Optional dependencies
 [SigPy][sigpy]:
 ```bash
@@ -72,7 +77,7 @@ pip install sigpy
 pip install torchkbnufft
 ```
 
-### Test dataset
+### Example small dataset
 https://utexas.box.com/s/f1rpp5wvpzqorthxg98rbpszc5816c2f
 
 [sigpy]: https://github.com/mikgroup/sigpy
