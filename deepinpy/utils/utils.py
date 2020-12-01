@@ -11,6 +11,11 @@ Utility functions """
 '''
 # FIXME: Some methods use sub-methods that have optional param axes, axes should also be added to these methods
 
+def h5_inspect(filename):
+    with h5py.File(filename, 'r') as F:
+        for key in F.keys():
+            print(key, F[key].shape)
+
 def h5_write(filename, data):
     """Read numpy arrays from h5 file.
 
