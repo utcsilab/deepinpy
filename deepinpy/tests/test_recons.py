@@ -49,6 +49,7 @@ args.checkpoint_init = None
 args.num_spatial_dimensions = 2
 args.num_accumulate = 1
 args.clip_grad = 0
+args.adjoint_data = False
 
 # try to make a checkpoint logger
 checkpoint_callback = ModelCheckpoint('/dev/null', 'epoch', save_top_k=-1, mode='max', verbose=False)
