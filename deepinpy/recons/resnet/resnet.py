@@ -31,7 +31,11 @@ class ResNetRecon(Recon):
         inp = data['out']
 
         self.A = MultiChannelMRI(maps, masks, l2lam=0.,  img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
-        self.x_adj = self.A.adjoint(inp)
+
+        if self.hparams.adjoint_data:
+            self.x_adj = inp
+        else:
+            self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
         return self.network(self.x_adj)

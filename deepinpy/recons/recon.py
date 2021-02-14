@@ -62,7 +62,7 @@ class Recon(pl.LightningModule):
         return torch.mean(torch.real(opt.zdot_single_batch(resid)))
 
     def _build_data(self):
-        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint=False, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
+        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
 
     def _abs_loss_fun(self, x_hat, imgs):
         x_hat_abs = torch.sqrt(x_hat.pow(2).sum(dim=-1))

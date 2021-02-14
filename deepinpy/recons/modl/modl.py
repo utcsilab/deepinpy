@@ -38,7 +38,11 @@ class MoDLRecon(Recon):
         self.A = self.unroll_model.module_list[0].A
 
     def forward(self, y):
-        return self.unroll_model(self.A.adjoint(y))
+        if self.hparams.adjoint_data:
+            b = y
+        else:
+            b = self.A.adjoint(y)
+        return self.unroll_model(b)
 
     def get_metadata(self):
         return {
@@ -62,7 +66,10 @@ class MoDLReconOneUnroll(torch.nn.Module):
         inp = data['out']
 
         self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
-        self.x_adj = self.A.adjoint(inp)
+        if self.hparams.adjoint_data:
+            self.x_adj = inp
+        else:
+            self.x_adj = self.A.adjoint(inp)
 
     def forward(self, x):
 

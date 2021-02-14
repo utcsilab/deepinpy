@@ -21,7 +21,11 @@ class CGSenseRecon(Recon):
         inp = data['out']
 
         self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
-        self.x_adj = self.A.adjoint(inp)
+
+        if self.hparams.adjoint_data:
+            self.x_adj = inp
+        else:
+            self.x_adj = self.A.adjoint(inp)
 
     def forward(self, y):
         cg_op = ConjGrad(self.x_adj, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
