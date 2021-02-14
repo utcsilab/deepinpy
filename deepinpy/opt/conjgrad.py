@@ -81,61 +81,10 @@ def conjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
     	A tuple containing the output vector x and the number of iterations performed.
     """
 
-    # explicitly remove r from the computational graph
-    r = b.new_zeros(b.shape, requires_grad=False)
-
-    # the first calc of the residual may not be necessary in some cases...
-    if l2lam > 0:
-        r = b - (Aop_fun(x) + l2lam * x)
-    else:
-        r = b - Aop_fun(x)
-    p = r
-
-    rsnot = dot_single_batch(r)
-    rsold = rsnot
-    rsnew = rsnot
-
-    eps_squared = eps ** 2
-
-    reshape = (-1,) + (1,) * (len(x.shape) - 1)
-
-    num_iter = 0
-    for i in range(max_iter):
-
-        if verbose:
-            print('{i}: {rsnew}'.format(i=i, rsnew=utils.itemize(torch.sqrt(rsnew))))
-
-        if rsnew.max() < eps_squared:
-            break
-
-        if l2lam > 0:
-            Ap = Aop_fun(p) + l2lam * p
-        else:
-            Ap = Aop_fun(p)
-
-        pAp = dot_batch(p, Ap)
-
-        #print(utils.itemize(pAp))
-
-        alpha = (rsold / pAp).reshape(reshape)
-
-        x = x + alpha * p
-        r = r - alpha * Ap
-
-        rsnew = dot_single_batch(r)
-
-        beta = (rsnew / rsold).reshape(reshape)
-
-        rsold = rsnew
-
-        p = beta * p + r
-        num_iter += 1
+    return conjgrad_priv(x, b, Aop_fun, max_iter=max_iter, l2lam=l2lam, eps=eps, verbose=verbose, complex=False)
 
 
-    if verbose:
-        print('FINAL: {rsnew}'.format(rsnew=torch.sqrt(rsnew)))
 
-    return x, num_iter
 
 
 def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
@@ -154,17 +103,41 @@ def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
     	A tuple containing the output vector x and the number of iterations performed.
     """
 
+    return conjgrad_priv(x, b, Aop_fun, max_iter=max_iter, l2lam=l2lam, eps=eps, verbose=verbose, complex=True)
+
+def conjgrad_priv(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True, complex=True):
+    """Conjugate Gradient Algorithm applied to batches; assumes the first index is batch size.
+
+    Args:
+    x (Tensor): The initial input to the algorithm.
+    b (Tensor): The residual vector
+    Aop_fun (func): A function performing the normal equations, A.adjoint * A
+    max_iter (int): Maximum number of times to run conjugate gradient descent.
+    l2lam (float): The L2 lambda, or regularization parameter (must be positive).
+    eps (float): Determines how small the residuals must be before termination…
+    verbose (bool): If true, prints extra information to the console.
+    complex (bool): If true, uses complex vector space
+
+    Returns:
+    	A tuple containing the output Tensor x and the number of iterations performed.
+    """
+
+    if complex:
+        _dot_single_batch = lambda r: zdot_single_batch(r).real
+        _dot_batch = zdot_batch
+    else:
+        _dot_single_batch = dot_single_batch
+        _dot_batch = dot_batch
+
     # explicitly remove r from the computational graph
-    r = b.new_zeros(b.shape, requires_grad=False, dtype=torch.cfloat)
+    #r = b.new_zeros(b.shape, requires_grad=False, dtype=torch.cfloat)
 
     # the first calc of the residual may not be necessary in some cases...
-    if l2lam > 0:
-        r = b - (Aop_fun(x) + l2lam * x)
-    else:
-        r = b - Aop_fun(x)
+    # note that l2lam can be less than zero when training due to finite # of CG iterations
+    r = b - (Aop_fun(x) + l2lam * x)
     p = r
 
-    rsnot = zdot_single_batch(r).real
+    rsnot = _dot_single_batch(r)
     rsold = rsnot
     rsnew = rsnot
 
@@ -182,12 +155,8 @@ def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         if rsnew.max() < eps_squared:
             break
 
-        if l2lam > 0:
-            Ap = Aop_fun(p) + l2lam * p
-        else:
-            Ap = Aop_fun(p)
-
-        pAp = zdot_batch(p, Ap)
+        Ap = Aop_fun(p) + l2lam * p
+        pAp = _dot_batch(p, Ap)
 
         #print(utils.itemize(pAp))
 
@@ -196,7 +165,7 @@ def zconjgrad(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True):
         x = x + alpha * p
         r = r - alpha * Ap
 
-        rsnew = zdot_single_batch(r).real
+        rsnew = _dot_single_batch(r)
 
         beta = (rsnew / rsold).reshape(reshape)
 
