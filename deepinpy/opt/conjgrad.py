@@ -124,7 +124,7 @@ def conjgrad_priv(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True, 
 
     if complex:
         _dot_single_batch = lambda r: zdot_single_batch(r).real
-        _dot_batch = zdot_batch
+        _dot_batch = lambda r, p: zdot_batch(r, p).real
     else:
         _dot_single_batch = dot_single_batch
         _dot_batch = dot_batch
