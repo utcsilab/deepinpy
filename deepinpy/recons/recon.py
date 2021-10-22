@@ -130,9 +130,16 @@ class Recon(pl.LightningModule):
 
         idx, data = batch
         idx = utils.itemize(idx)
+
+        # FIXME: hack for complex, since on CPU it returns torch.complex but on GPU it returns torch.float
+        if data['imgs'].dtype == torch.float32:
+            data['imgs'] = torch.view_as_complex(data['imgs'])
+            data['maps'] = torch.view_as_complex(data['maps'])
+            data['out'] = torch.view_as_complex(data['out'])
+
         imgs = data['imgs']
         inp = data['out']
-        
+
         self.batch(data)
 
         x_hat = self.forward(inp)
