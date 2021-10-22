@@ -6,7 +6,7 @@ scipy>=1.2.1
 tqdm>=4.36.1
 torchvision
 tensorboard
-torch>=1.7.0
+torch>=1.9.0
 git+git://github.com/williamFalcon/test-tube.git@0.7.5#egg=test-tube
 git+git://github.com/PyTorchLightning/pytorch-lightning.git@1.0.6#egg=pytorch-lightning
 
