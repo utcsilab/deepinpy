@@ -153,6 +153,9 @@ def conjgrad_priv(x, b, Aop_fun, max_iter=10, l2lam=0., eps=1e-4, verbose=True, 
             print('{i}: {rsnew}'.format(i=i, rsnew=utils.itemize(torch.sqrt(rsnew))))
 
         if rsnew.max() < eps_squared:
+            if i == 0:
+                # no iterations were run, so manually put x on the computation graph
+                x.requires_grad_()
             break
 
         Ap = Aop_fun(p) + l2lam * p
