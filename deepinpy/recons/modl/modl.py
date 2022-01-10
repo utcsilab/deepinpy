@@ -71,14 +71,25 @@ class MoDLReconOneUnroll(torch.nn.Module):
         else:
             self.x_adj = self.A.adjoint(inp)
 
+        if self.A.single_channel:
+            self.inp = inp.squeeze(1)
+
     def forward(self, x):
 
         assert self.x_adj is not None, "x_adj not computed!"
         r = self.denoiser(x)
 
-        cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
-        x = cg_op.forward(x)
-        self.num_cg = cg_op.num_cg
+        if self.A.single_channel:
+            maps = self.A.maps.squeeze(1)
+            r_ft = fft_forw(r * maps)
+            x_ft = self.A.mask * (self.inp + self.l2lam * r_ft) / (1 + self.l2lam)
+            x_ft[self.A.mask == 0] = r_ft[self.A.mask == 0]
+            x = torch.conj(maps) * fft_adj(x_ft)
+            self.num_cg = 0
+        else:
+            cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
+            x = cg_op.forward(x)
+            self.num_cg = cg_op.num_cg
 
         return x
 

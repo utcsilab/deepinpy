@@ -37,6 +37,11 @@ class MultiChannelMRI(torch.nn.Module):
         self._normal = None
         self.num_spatial_dims = num_spatial_dims
 
+        if self.maps.shape[1] == 1:
+            self.single_channel = True
+        else:
+            self.single_channel = False
+
         if self.noncart:
             assert use_sigpy, 'Must use SigPy for NUFFT!'
 
