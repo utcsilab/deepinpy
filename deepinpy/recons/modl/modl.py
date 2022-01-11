@@ -6,7 +6,7 @@ import torch
 from deepinpy.utils import utils
 from deepinpy.opt import ConjGrad
 from deepinpy.models import ResNet5Block, ResNet, UnrollNet
-from deepinpy.forwards import MultiChannelMRI
+from deepinpy.forwards import MultiChannelMRI, fft_forw, fft_adj
 from deepinpy.recons import Recon
 
 class MoDLRecon(Recon):
@@ -68,17 +68,31 @@ class MoDLReconOneUnroll(torch.nn.Module):
         self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
         if self.hparams.adjoint_data:
             self.x_adj = inp
+            if self.A.single_channel:
+                self.inp = fft_forw(maps.squeeze(1) * self.x_adj)
         else:
             self.x_adj = self.A.adjoint(inp)
+            if self.A.single_channel:
+                self.inp = inp.squeeze(1)
+
 
     def forward(self, x):
 
         assert self.x_adj is not None, "x_adj not computed!"
         r = self.denoiser(x)
 
-        cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
-        x = cg_op.forward(x)
-        self.num_cg = cg_op.num_cg
+        if self.A.single_channel:
+            # multiply with maps because they might not be all-ones, and they include the fftmod term
+            maps = self.A.maps.squeeze(1)
+            r_ft = fft_forw(r * maps)
+            x_ft_ones = (self.inp + self.l2lam * r_ft) / (1 + self.l2lam)
+            x_ft = x_ft_ones * (abs(self.A.mask) != 0) + r_ft * (abs(self.A.mask) == 0)
+            x = torch.conj(maps) * fft_adj(x_ft)
+            self.num_cg = 0
+        else:
+            cg_op = ConjGrad(self.x_adj + self.l2lam * r, self.A.normal, l2lam=self.l2lam, max_iter=self.hparams.cg_max_iter, eps=self.hparams.cg_eps, verbose=False)
+            x = cg_op.forward(x)
+            self.num_cg = cg_op.num_cg
 
         return x
 
