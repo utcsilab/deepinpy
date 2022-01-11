@@ -46,6 +46,8 @@ class DeepBasisPursuitRecon(Recon):
             self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
             self.x_adj = self.A.adjoint(inp)
 
+            # FIXME: look at modl for single channel support
+            assert self.A.single_channel is False, 'single channel support not yet implemented!'
             self.eps = (self.A.maps.shape[1] * torch.sum(self.A.mask.reshape((self.A.mask.shape[0], -1)), dim=1)).sqrt() * self.hparams.stdev
 
     def forward(self, y):
