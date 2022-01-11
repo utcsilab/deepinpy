@@ -68,11 +68,13 @@ class MoDLReconOneUnroll(torch.nn.Module):
         self.A = MultiChannelMRI(maps, masks, l2lam=0., img_shape=data['imgs'].shape, use_sigpy=self.hparams.use_sigpy, noncart=self.hparams.noncart)
         if self.hparams.adjoint_data:
             self.x_adj = inp
+            if self.A.single_channel:
+                self.inp = fft_forw(maps.squeeze(1) * self.x_adj)
         else:
             self.x_adj = self.A.adjoint(inp)
+            if self.A.single_channel:
+                self.inp = inp.squeeze(1)
 
-        if self.A.single_channel:
-            self.inp = inp.squeeze(1)
 
     def forward(self, x):
 
