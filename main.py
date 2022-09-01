@@ -66,16 +66,16 @@ def main_train(args, gpu_ids=None):
 
     if gpu_ids is None:
         gpus = None
-        distributed_backend = None # FIXME should this also be ddp?
+        accelerator = None
     elif args.hyperopt:
         gpus = 1
-        distributed_backend = None
+        accelerator = None
     else:
         gpus = gpu_ids
-        distributed_backend = 'ddp'
+        accelerator = "ddp"
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, accelerator=accelerator, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
 
     trainer.fit(M)
 
