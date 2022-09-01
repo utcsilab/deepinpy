@@ -45,9 +45,10 @@ class Recon(pl.LightningModule):
         self._build_data()
         self.scheduler = None
         self.log_dict = None
+        self.iter = 0
 
     def _init_hparams(self, hparams):
-        self.hparams = hparams
+        self.save_hyperparameters(hparams)
 
         #self._loss_fun = torch.nn.MSELoss(reduction='sum')
 
