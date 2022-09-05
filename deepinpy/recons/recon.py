@@ -18,9 +18,19 @@ from torchvision.utils import make_grid
 from torch.optim import lr_scheduler 
 
 @torch.jit.script
-def calc_nrmse(gt, pred):
+def calc_nrmse_real(gt, pred):
     resid = pred - gt
     return (torch.real(opt.zdot_single_batch(resid)) / torch.real(opt.zdot_single_batch(gt))).sqrt().mean()
+
+def calc_nrmse_abs(gt, pred):
+    temp = torch.sqrt(torch.mean(torch.square(torch.abs(gt) - torch.abs(pred))))
+    rr = torch.max(torch.abs(gt)) - torch.min(torch.abs(gt))  # range
+    return torch.div(temp, rr)
+
+def calc_nrmse(gt, pred, nrmse_only_real):
+    if nrmse_only_real:
+        return calc_nrmse_real(gt, pred)
+    return calc_nrmse_abs(gt, pred)
 
 
 class Recon(pl.LightningModule):
@@ -154,7 +164,9 @@ class Recon(pl.LightningModule):
                 gt = imgs
 
             loss = self.loss_fun(pred, gt, self.hparams.loss_function)
-            return loss
+            NRMSE = calc_nrmse(pred, gt, self.hparams.nrmse_only_real)
+            SSIM = 1 - utils.ssim_loss(pred, gt)
+            return [loss, NRMSE, SSIM]
         else:
             return 0
 
@@ -166,7 +178,17 @@ class Recon(pl.LightningModule):
         """
         self.logger.experiment.add_scalar(
             "val_loss",
-            torch.mean(torch.stack(batch_parts)),
+            torch.mean(torch.stack([i[1] for i in batch_parts])),
+            self.global_step,
+        )
+        self.logger.experiment.add_scalar(
+            "val_nrmse",
+            torch.mean(torch.stack([i[1] for i in batch_parts])),
+            self.global_step,
+        )
+        self.logger.experiment.add_scalar(
+            "val_ssim",
+            torch.mean(torch.stack([i[2] for i in batch_parts])),
             self.global_step,
         )
 
@@ -262,14 +284,15 @@ class Recon(pl.LightningModule):
         except:
             _lambda = 0
         _epoch = self.current_epoch
-        _nrmse = calc_nrmse(imgs, x_hat).detach().requires_grad_(False)
-
+        _nrmse = calc_nrmse(pred, gt, self.hparams.nrmse_only_real).detach().requires_grad_(False)
+        _ssim = 1 - utils.ssim_loss(pred, gt)
 
         log_dict = {
                 'lambda': _lambda,
                 'train_loss': _loss,
                 'epoch': self.current_epoch,
-                'nrmse': _nrmse, 
+                'train_nrmse': _nrmse, 
+                'train_ssim': _ssim, 
                 }
 
         # FIXME: let the user specify this list
