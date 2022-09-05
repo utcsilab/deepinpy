@@ -63,7 +63,9 @@ class Recon(pl.LightningModule):
         return torch.mean(torch.real(opt.zdot_single_batch(resid)))
 
     def _build_data(self):
-        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
+        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_train_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_train_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
+        if self.hparams.data_val_file:
+            self.V = MultiChannelMRIDataset(data_file=self.hparams.data_val_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_val_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
 
     def _abs_loss_fun(self, x_hat, imgs):
         x_hat_abs = torch.sqrt(x_hat.pow(2).sum(dim=-1))
@@ -115,6 +117,49 @@ class Recon(pl.LightningModule):
         except KeyError:
             pass
         return log_dict
+
+    def validation_step(self, batch, batch_idx):
+        """Used automatically in validation loop by pytorch lightning.
+        Returns a list of validation loss, NRMSE, and SSIM.
+
+        Args:
+            batch (tuple): Should hold the indices of data and the corresponding data, in said order.
+            batch_idx (None): Currently unimplemented.
+
+        Returns:
+            A list of validation loss, NRMSE, and SSIM.
+        """
+        if self.hparams.data_val_file:
+            idx, data = batch
+            imgs = data["imgs"]
+            inp = data["out"]
+
+            self.batch(data)
+            x_hat = self.forward(inp)
+
+            if self.hparams.self_supervised:
+                pred = self.A.forward(x_hat)
+                gt = inp
+            else:
+                pred = x_hat
+                gt = imgs
+
+            loss = self.loss_fun(pred, gt)
+            return loss
+        else:
+            return 0
+
+    def validation_epoch_end(self, batch_parts):
+        """Logs validation loss, NRMSE, and SSIM to tensorboard. Called automatically by pytorch lightning.
+
+        Args:
+            batch_parts (Tensor): concatenation of validation_step outputs over all validation data.
+        """
+        self.logger.experiment.add_scalar(
+            "val_loss",
+            torch.mean(torch.stack(batch_parts)),
+            self.global_step,
+        )
 
     # FIXME: batch_nb parameter appears unused.
     def training_step(self, batch, batch_nb):
@@ -216,7 +261,6 @@ class Recon(pl.LightningModule):
                 'train_loss': _loss,
                 'epoch': self.current_epoch,
                 'nrmse': _nrmse, 
-                'val_loss': 0.,
                 }
 
         # FIXME: let the user specify this list
@@ -270,3 +314,13 @@ class Recon(pl.LightningModule):
         """
 
         return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=self.hparams.shuffle, num_workers=0, drop_last=True)
+
+    def val_dataloader(self):
+        """Creates a DataLoader object, with distributed training if specified in the hyperparameters.
+
+        Returns:
+            A PyTorch DataLoader that has been configured according to the hyperparameters.
+        """
+        if self.hparams.data_val_file:
+            return torch.utils.data.DataLoader(self.V, batch_size=self.hparams.batch_size, shuffle=self.hparams.shuffle, num_workers=0, drop_last=True)
+        return None
