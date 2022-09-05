@@ -110,6 +110,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='data.h5', default=None)
     parser.add_argument('--num_train_data_sets', action='store', dest='num_train_data_sets', type=int, help='number of training data sets to use', default=None)
     parser.add_argument('--num_val_data_sets', action='store', dest='num_val_data_sets', type=int, help='number of validation data sets to use', default=None)
+    parser.add_argument("--loss_function", action="store", dest="loss_function", type=str, help="loss function, can be L1, L2, SSIM, or None (default)", default=None)
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
     parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0)

@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import h5py
 import scipy
+import sys
 
 
 '''
@@ -208,3 +209,88 @@ def ifft2(x, axes=(-2, -1)):
     """
 
     return scipy.fftpack.ifft2(x, axes=axes)
+
+def _tf_fspecial_gauss(size: int, sigma: float) -> torch.Tensor:
+    """Function to mimic the 'fspecial' gaussian MATLAB function. Credit to Ke Wang (kewang@berkeley.edu)
+        Used to compute SSIM loss.
+
+    Args:
+        size (int): Shape of Gaussian filter
+        sigma (float): Standard deviation of the Gaussian filter
+
+    Returns:
+        (Tensor) Gaussian filter
+    """
+    x_data, y_data = np.mgrid[
+        -size // 2 + 1 : size // 2 + 1, -size // 2 + 1 : size // 2 + 1
+    ]
+
+    x_data = np.expand_dims(x_data, axis=0).astype(np.float32)
+    x_data = np.expand_dims(x_data, axis=0).astype(np.float32)
+
+    y_data = np.expand_dims(y_data, axis=0)
+    y_data = np.expand_dims(y_data, axis=0)
+
+    g = torch.exp(
+        -(
+            (torch.from_numpy(x_data) ** 2 + torch.from_numpy(y_data) ** 2)
+            / (2.0 * torch.tensor(sigma) ** 2)
+        )
+    )
+    return g / torch.sum(g)
+
+def ssim_loss(y_pred, y_true):
+    """Calculates the loss=1 - SSIM between input tensors y_pred and y_true. Credit to Ke Wang (kewang@berkeley.edu)
+
+    Args:
+        y_true (Tensor): Ground truth image tensor
+        y_pred (Tensor): Reconstructed image tensor
+
+    Returns:
+        (Tensor) Unweighted SSIM between y_pred and y_true.
+    """
+    alpha = 1.0
+    beta = 1.0
+    gamma = 1.0
+
+    img1 = torch.abs(y_pred[None, :, :, :])
+    img2 = torch.abs(y_true[None, :, :, :])
+
+    size = 11
+    sigma = 1.5
+    window = _tf_fspecial_gauss(size, sigma).to(
+        img1.device
+    )  # window shape [size, size]
+    eps = sys.float_info.epsilon * 100
+    k1 = 0.01
+    k2 = 0.03
+
+    # Start main code piece
+    max_img2 = torch.max(img2)  # dynamic ranges
+    c1 = torch.pow(k1 * max_img2, 2)
+    c2 = torch.pow(k2 * max_img2, 2)
+    #
+    mu1 = torch.nn.functional.conv2d(img1, window)
+    mu2 = torch.nn.functional.conv2d(img2, window)
+    mu1_sq = mu1 * mu1
+    mu2_sq = mu2 * mu2
+    mu1_mu2 = mu1 * mu2
+    sigma1_sq = torch.nn.functional.conv2d(img1 * img1, window) - mu1_sq
+    sigma2_sq = torch.nn.functional.conv2d(img2 * img2, window) - mu2_sq
+    sigma12 = torch.nn.functional.conv2d(img1 * img2, window) - mu1_mu2
+    sigma1 = torch.sqrt(torch.abs(sigma1_sq) + eps)
+    sigma2 = torch.sqrt(torch.abs(sigma2_sq) + eps)
+
+    g_term = 2 * torch.abs(sigma12) + c2
+    denom = 2 * sigma1 * sigma2 + c2
+
+    a = 2 * mu1_mu2 + c1
+    b = mu1_sq + mu2_sq + c1 + eps
+    c = sigma1_sq + sigma2_sq + c2 + eps
+
+    term1 = a / b
+    term2 = denom / c
+    term3 = g_term / denom
+    value = term1 * term2 * term3
+
+    return 1 - value.mean()
