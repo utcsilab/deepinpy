@@ -57,10 +57,19 @@ class Recon(pl.LightningModule):
         else:
             self.loss_fun = self._loss_fun
 
-    def _loss_fun(self, pred, gt):
-        resid = pred - gt
-        #return torch.mean(torch.sum(torch.real(torch.conj(resid) * resid)))
-        return torch.mean(torch.real(opt.zdot_single_batch(resid)))
+    def _loss_fun(self, pred, gt, loss_type):        
+        if loss_type == "L1":
+            resid = torch.abs(pred - gt)
+            return torch.mean(resid)
+        elif loss_type == "L2":
+            resid = torch.abs(torch.square(pred - gt))
+            return torch.mean(resid)
+        elif loss_type == "SSIM":
+            return utils.ssim_loss(pred, gt)
+        elif loss_type is None:
+            return torch.mean(torch.real(opt.zdot_single_batch(pred - gt)))
+        else:
+            raise ValueError("Invalid loss function, must be L1, L2, SSIM, or None.")
 
     def _build_data(self):
         self.D = MultiChannelMRIDataset(data_file=self.hparams.data_train_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_train_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
@@ -144,7 +153,7 @@ class Recon(pl.LightningModule):
                 pred = x_hat
                 gt = imgs
 
-            loss = self.loss_fun(pred, gt)
+            loss = self.loss_fun(pred, gt, self.hparams.loss_function)
             return loss
         else:
             return 0
@@ -245,7 +254,7 @@ class Recon(pl.LightningModule):
             pred = x_hat
             gt = imgs
 
-        loss = self.loss_fun(pred, gt)
+        loss = self.loss_fun(pred, gt, self.hparams.loss_function)
 
         _loss = loss.clone().detach().requires_grad_(False)
         try:
