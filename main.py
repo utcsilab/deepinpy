@@ -16,6 +16,7 @@ import time
 import sys
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
+from deepinpy.forwards import MultiChannelMRIDataset
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -23,6 +24,7 @@ torch.backends.cudnn.benchmark = True
 
 import random # used to avoid race conditions, intentionall unseeded
 import numpy.random
+import numpy as np
 
 def main_train(args, gpu_ids=None):
 
@@ -79,6 +81,23 @@ def main_train(args, gpu_ids=None):
 
     trainer.fit(M)
 
+    # Inference on some test dataset, if specified.
+    if args.data_inference_file and args.data_inference_output and args.num_inference_data_sets:
+        assert len(args.data_inference_file) == len(args.data_inference_output)
+        assert len(args.data_inference_file) == len(args.num_inference_data_sets)
+        M.eval()
+        with torch.no_grad():
+            # Iterate through specified files and reconstruct k-space using network.
+            for i in range(len(args.data_inference_file)):
+                eval_data = MultiChannelMRIDataset(data_file=args.data_inference_file[i], stdev=args.stdev, num_data_sets=args.num_inference_data_sets[i], adjoint_data=args.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=args.fully_sampled, data_idx=None, inverse_crime=args.inverse_crime, noncart=args.noncart)
+                eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=args.num_inference_data_sets[i], shuffle=False, num_workers=0, drop_last=False)
+                print(i, args.data_inference_output[i], args.data_inference_file[i], args.num_inference_data_sets[i], "ASD")
+                print(eval_loader)
+                for batch in eval_loader:
+                    print("Made it")
+                    M.batch(batch[1])
+                    recon_imgs = M(batch[1]["out"])
+                    np.save(args.data_inference_output[i], recon_imgs)
 
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'
@@ -106,10 +125,13 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
     parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
     parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
-    parser.add_argument('--data_train_file', action='store', dest='data_train_file', type=str, help='data.h5', default=None)
-    parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='data.h5', default=None)
+    parser.add_argument('--data_train_file', action='store', dest='data_train_file', type=str, help='train_data.h5', default=None)
+    parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='val_data.h5', default=None)
+    parser.add_argument("--data_inference_file", action="store", dest="data_inference_file", nargs="+", type=str, help="test_data.h5", default=None)
+    parser.add_argument("--data_inference_output", action="store", dest="data_inference_output", nargs="+", type=str, help="output files for reconstruction", default=None)
     parser.add_argument('--num_train_data_sets', action='store', dest='num_train_data_sets', type=int, help='number of training data sets to use', default=None)
     parser.add_argument('--num_val_data_sets', action='store', dest='num_val_data_sets', type=int, help='number of validation data sets to use', default=None)
+    parser.add_argument("--num_inference_data_sets", action="store", dest="num_inference_data_sets", nargs="+", type=int, help="number of inference data for reconstruction", default=None)
     parser.add_argument("--loss_function", action="store", dest="loss_function", type=str, help="loss function, can be L1, L2, SSIM, or None (default)", default=None)
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
