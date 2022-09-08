@@ -17,6 +17,10 @@ ksp: [Ntraining, Ncoil, N1, N2, ..., NT, X, Y, Z]: np.complex
 - `Ntraining` is the number of training examples. If `Ntraining=1`, it should still be included as a singleton dimension.  
 - `N1`, `N2`, ..., `NT` are higher-order dimensions, and can be used for multi-phase data (e.g. temporal, contrast, coefficients, phases, etc.). These dimensions are optional and can be excluded.
 - `X`, `Y`, `Z` are spatial dimensions. In the case of 2D data, the `Z` dimension can be excluded.
+- "imgs" are the fully sampled images used for ground-truth for calculating nrmse and for doing supervised learning
+- "ksp" is the kspace that will be down-sampled by the mask. It should be fully sampled, but it technically doesn’t have to be.
+- "masks" will be multiplied by ksp each training round
+
 
 Except for the masks, all data should be stored as complex-valued arrays.
 
