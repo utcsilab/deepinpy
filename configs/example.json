@@ -16,6 +16,5 @@
 	"step": 0.001,
 	"num_epochs": 10,
 	"lr_scheduler": [5, 0.1],
-	"loss_function": "L1",
-	"nrmse_only_real": false
+	"loss_function": "L1"
 }

@@ -18,20 +18,9 @@ from torchvision.utils import make_grid
 from torch.optim import lr_scheduler 
 
 @torch.jit.script
-def calc_nrmse_real(gt, pred):
+def calc_nrmse(pred, gt):
     resid = pred - gt
     return (torch.real(opt.zdot_single_batch(resid)) / torch.real(opt.zdot_single_batch(gt))).sqrt().mean()
-
-def calc_nrmse_abs(gt, pred):
-    temp = torch.sqrt(torch.mean(torch.square(torch.abs(gt) - torch.abs(pred))))
-    rr = torch.max(torch.abs(gt)) - torch.min(torch.abs(gt))  # range
-    return torch.div(temp, rr)
-
-def calc_nrmse(gt, pred, nrmse_only_real):
-    if nrmse_only_real:
-        return calc_nrmse_real(gt, pred)
-    return calc_nrmse_abs(gt, pred)
-
 
 class Recon(pl.LightningModule):
     """An abstract class for implementing system-model-optimization (SMO) constructions.
@@ -67,19 +56,15 @@ class Recon(pl.LightningModule):
         else:
             self.loss_fun = self._loss_fun
 
-    def _loss_fun(self, pred, gt, loss_type):        
-        if loss_type == "L1":
-            resid = torch.abs(pred - gt)
-            return torch.mean(resid)
-        elif loss_type == "L2":
-            resid = torch.abs(torch.square(pred - gt))
-            return torch.mean(resid)
-        elif loss_type == "SSIM":
-            return utils.ssim_loss(pred, gt)
-        elif loss_type is None:
+    def _loss_fun(self, pred, gt, loss_type):  
+        if loss_type == 'L1':
+            return torch.mean(torch.reshape(torch.abs(pred - gt), (pred.shape[0], -1)).sum(1))
+        elif loss_type == 'L2':
             return torch.mean(torch.real(opt.zdot_single_batch(pred - gt)))
+        elif loss_type == 'SSIM':
+            return utils.ssim_loss(pred, gt)
         else:
-            raise ValueError("Invalid loss function, must be L1, L2, SSIM, or None.")
+            raise ValueError('Invalid loss function, must be L2 (default), L1, or SSIM')
 
     def _build_data(self):
         self.D = MultiChannelMRIDataset(data_file=self.hparams.data_train_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_train_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
@@ -150,8 +135,8 @@ class Recon(pl.LightningModule):
         """
         if self.hparams.data_val_file:
             idx, data = batch
-            imgs = data["imgs"]
-            inp = data["out"]
+            imgs = data['imgs']
+            inp = data['out']
 
             self.batch(data)
             x_hat = self.forward(inp)
@@ -164,7 +149,7 @@ class Recon(pl.LightningModule):
                 gt = imgs
 
             loss = self.loss_fun(pred, gt, self.hparams.loss_function)
-            NRMSE = calc_nrmse(pred, gt, self.hparams.nrmse_only_real)
+            NRMSE = calc_nrmse(pred, gt)
             SSIM = 1 - utils.ssim_loss(pred, gt)
             return [loss, NRMSE, SSIM]
         else:
@@ -177,17 +162,17 @@ class Recon(pl.LightningModule):
             batch_parts (Tensor): concatenation of validation_step outputs over all validation data.
         """
         self.logger.experiment.add_scalar(
-            "val_loss",
+            'val_loss',
             torch.mean(torch.stack([i[1] for i in batch_parts])),
             self.global_step,
         )
         self.logger.experiment.add_scalar(
-            "val_nrmse",
+            'val_nrmse',
             torch.mean(torch.stack([i[1] for i in batch_parts])),
             self.global_step,
         )
         self.logger.experiment.add_scalar(
-            "val_ssim",
+            'val_ssim',
             torch.mean(torch.stack([i[2] for i in batch_parts])),
             self.global_step,
         )
@@ -284,7 +269,7 @@ class Recon(pl.LightningModule):
         except:
             _lambda = 0
         _epoch = self.current_epoch
-        _nrmse = calc_nrmse(pred, gt, self.hparams.nrmse_only_real).detach().requires_grad_(False)
+        _nrmse = calc_nrmse(pred, gt).detach().requires_grad_(False)
         _ssim = 1 - utils.ssim_loss(pred, gt)
 
         log_dict = {

@@ -160,6 +160,10 @@ class MultiChannelMRIDataset(torch.utils.data.Dataset):
 
         return out
 
+def load_inference_data(args, i):
+    eval_data = MultiChannelMRIDataset(data_file=args.data_inference_file[i], stdev=args.stdev, num_data_sets=args.num_inference_data_sets[i], adjoint_data=args.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=args.fully_sampled, data_idx=None, inverse_crime=args.inverse_crime, noncart=args.noncart)
+    eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=args.num_inference_data_sets[i], shuffle=False, num_workers=0, drop_last=False)
+    return next(iter(eval_loader))[1]
 
 def load_data(idx, data_file, gen_masks=False):
     with h5py.File(data_file, 'r') as F:
