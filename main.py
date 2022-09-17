@@ -16,7 +16,7 @@ import time
 import sys
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
-from deepinpy.forwards import MultiChannelMRIDataset
+from deepinpy.forwards import load_inference_data
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -74,7 +74,7 @@ def main_train(args, gpu_ids=None):
         accelerator = None
     else:
         gpus = gpu_ids
-        accelerator = "ddp"
+        accelerator = 'ddp'
 
 
     trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, accelerator=accelerator, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
@@ -89,12 +89,10 @@ def main_train(args, gpu_ids=None):
         with torch.no_grad():
             # Iterate through specified files and reconstruct k-space using network.
             for i in range(len(args.data_inference_file)):
-                eval_data = MultiChannelMRIDataset(data_file=args.data_inference_file[i], stdev=args.stdev, num_data_sets=args.num_inference_data_sets[i], adjoint_data=args.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=args.fully_sampled, data_idx=None, inverse_crime=args.inverse_crime, noncart=args.noncart)
-                eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=args.num_inference_data_sets[i], shuffle=False, num_workers=0, drop_last=False)
-                for batch in eval_loader:
-                    M.batch(batch[1])
-                    recon_imgs = M(batch[1]["out"])
-                    np.save(args.data_inference_output[i], recon_imgs)
+                inference_data = load_inference_data(args, i)
+                M.batch(inference_data)
+                recon_imgs = M(inference_data['out'])
+                np.save(args.data_inference_output[i], recon_imgs)
 
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'
@@ -104,7 +102,7 @@ if __name__ == '__main__':
 
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, nb_samples=100, low=.0001, high=.001)
     parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=False, low=.0001, high=100, help='initial l2 regularization')
-    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="adam")
+    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default='adam')
     parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=False, low=1, high=20, help='max number of conjgrad iterations', default=10)
     parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=False, low=1, high=20, help='batch size', default=2)
     parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=False, low=1, high=10, nb_samples=4, help='number of unrolls', default=4)
@@ -124,13 +122,12 @@ if __name__ == '__main__':
     parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
     parser.add_argument('--data_train_file', action='store', dest='data_train_file', type=str, help='train_data.h5', default=None)
     parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='val_data.h5', default=None)
-    parser.add_argument("--data_inference_file", action="store", dest="data_inference_file", nargs="+", type=str, help="test_data.h5", default=None)
-    parser.add_argument("--data_inference_output", action="store", dest="data_inference_output", nargs="+", type=str, help="output files for reconstruction", default=None)
+    parser.add_argument('--data_inference_file', action='store', dest='data_inference_file', nargs='+', type=str, help='test_data.h5', default=None)
+    parser.add_argument('--data_inference_output', action='store', dest='data_inference_output', nargs='+', type=str, help='output files for reconstruction', default=None)
     parser.add_argument('--num_train_data_sets', action='store', dest='num_train_data_sets', type=int, help='number of training data sets to use', default=None)
     parser.add_argument('--num_val_data_sets', action='store', dest='num_val_data_sets', type=int, help='number of validation data sets to use', default=None)
-    parser.add_argument("--num_inference_data_sets", action="store", dest="num_inference_data_sets", nargs="+", type=int, help="number of inference data for reconstruction", default=None)
-    parser.add_argument("--loss_function", action="store", dest="loss_function", type=str, help="loss function, can be L1, L2, SSIM, or None (default)", default=None)
-    parser.add_argument("--nrmse_only_real", action='store_true', dest='nrmse_only_real', help='only use real values when computing NRMSE', default=True)
+    parser.add_argument('--num_inference_data_sets', action='store', dest='num_inference_data_sets', nargs='+', type=int, help='number of inference data for reconstruction', default=None)
+    parser.add_argument('--loss_function', action='store', dest='loss_function', type=str, help='loss function, can be L1, L2, SSIM, or None (default)', default='L2')
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
     parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0)
