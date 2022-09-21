@@ -1,14 +1,20 @@
 {
 	"random_seed": 723,
-	"data_file": "deepinpy/tests/dataset_unittest.h5",
+	"data_train_file": "deepinpy/tests/dataset_unittest.h5",
+	"data_val_file": "deepinpy/tests/dataset_unittest.h5",
+	"data_inference_file": ["deepinpy/tests/dataset_unittest.h5"],
+	"data_inference_output": ["deepinpy/tests/dataset_unittest_output.h5"],
 	"shuffle": true,
-	"num_data_sets": 10,
+	"num_train_data_sets": 10,
+	"num_val_data_sets": 10,
+	"num_inference_data_sets": [10],
 	"name": "Demo",
 	"recon": "resnet",
 	"network": "ResNet",
 	"num_blocks": 4,
 	"batch_size": 1,
 	"step": 0.001,
-	"num_epochs": 20,
-	"lr_scheduler": [5, 0.1]
+	"num_epochs": 10,
+	"lr_scheduler": [5, 0.1],
+	"loss_function": "L1"
 }

@@ -16,6 +16,7 @@ import time
 import sys
 
 from deepinpy.recons import CGSenseRecon, MoDLRecon, ResNetRecon, DeepBasisPursuitRecon
+from deepinpy.forwards import load_inference_data
 
 import torch
 torch.backends.cudnn.enabled = True
@@ -23,6 +24,7 @@ torch.backends.cudnn.benchmark = True
 
 import random # used to avoid race conditions, intentionall unseeded
 import numpy.random
+import numpy as np
 
 def main_train(args, gpu_ids=None):
 
@@ -66,19 +68,31 @@ def main_train(args, gpu_ids=None):
 
     if gpu_ids is None:
         gpus = None
-        distributed_backend = None # FIXME should this also be ddp?
+        accelerator = None
     elif args.hyperopt:
         gpus = 1
-        distributed_backend = None
+        accelerator = None
     else:
         gpus = gpu_ids
-        distributed_backend = 'ddp'
+        accelerator = 'ddp'
 
 
-    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, distributed_backend=distributed_backend, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
+    trainer = Trainer(max_epochs=args.num_epochs, gpus=gpus, logger=tt_logger, checkpoint_callback=checkpoint_callback, accelerator=accelerator, accumulate_grad_batches=args.num_accumulate, progress_bar_refresh_rate=1, gradient_clip_val=args.clip_grads)
 
     trainer.fit(M)
 
+    # Inference on some test dataset, if specified.
+    if args.data_inference_file and args.data_inference_output and args.num_inference_data_sets:
+        assert len(args.data_inference_file) == len(args.data_inference_output)
+        assert len(args.data_inference_file) == len(args.num_inference_data_sets)
+        M.eval()
+        with torch.no_grad():
+            # Iterate through specified files and reconstruct k-space using network.
+            for i in range(len(args.data_inference_file)):
+                inference_data = load_inference_data(args, i)
+                M.batch(inference_data)
+                recon_imgs = M(inference_data['out'])
+                np.save(args.data_inference_output[i], recon_imgs)
 
 if __name__ == '__main__':
     usage_str = 'usage: %(prog)s [options]'
@@ -88,7 +102,7 @@ if __name__ == '__main__':
 
     parser.opt_range('--step', type=float, dest='step', default=.001, help='step size/learning rate', tunable=True, nb_samples=100, low=.0001, high=.001)
     parser.opt_range('--l2lam_init', action='store', type=float, dest='l2lam_init', default=.001, tunable=False, low=.0001, high=100, help='initial l2 regularization')
-    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default="adam")
+    parser.opt_list('--solver', action='store', dest='solver', type=str, tunable=False, options=['sgd', 'adam'], help='optimizer/solver ("adam", "sgd")', default='adam')
     parser.opt_range('--cg_max_iter', action='store', dest='cg_max_iter', type=int, tunable=False, low=1, high=20, help='max number of conjgrad iterations', default=10)
     parser.opt_range('--batch_size', action='store', dest='batch_size', type=int, tunable=False, low=1, high=20, help='batch size', default=2)
     parser.opt_range('--num_unrolls', action='store', dest='num_unrolls', type=int, tunable=False, low=1, high=10, nb_samples=4, help='number of unrolls', default=4)
@@ -106,9 +120,14 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', action='store', dest='num_epochs', type=int, help='number of epochs', default=20)
     parser.add_argument('--random_seed', action='store', dest='random_seed', type=int, help='random number seed for numpy', default=723)
     parser.add_argument('--recon', action='store', type=str, dest='recon', default='cgsense', help='reconstruction method')
-    parser.add_argument('--data_file', action='store', dest='data_file', type=str, help='data.h5', default=None)
-    parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='data.h5', default=None)
-    parser.add_argument('--num_data_sets', action='store', dest='num_data_sets', type=int, help='number of data sets to use', default=None)
+    parser.add_argument('--data_train_file', action='store', dest='data_train_file', type=str, help='train_data.h5', default=None)
+    parser.add_argument('--data_val_file', action='store', dest='data_val_file', type=str, help='val_data.h5', default=None)
+    parser.add_argument('--data_inference_file', action='store', dest='data_inference_file', nargs='+', type=str, help='test_data.h5', default=None)
+    parser.add_argument('--data_inference_output', action='store', dest='data_inference_output', nargs='+', type=str, help='output files for reconstruction', default=None)
+    parser.add_argument('--num_train_data_sets', action='store', dest='num_train_data_sets', type=int, help='number of training data sets to use', default=None)
+    parser.add_argument('--num_val_data_sets', action='store', dest='num_val_data_sets', type=int, help='number of validation data sets to use', default=None)
+    parser.add_argument('--num_inference_data_sets', action='store', dest='num_inference_data_sets', nargs='+', type=int, help='number of inference data for reconstruction', default=None)
+    parser.add_argument('--loss_function', action='store', dest='loss_function', type=str, help='loss function, can be L1, L2, SSIM, or None (default)', default='L2')
     parser.add_argument('--num_workers', action='store', type=int,  dest='num_workers', help='number of workers', default=0)
     parser.add_argument('--shuffle', action='store_true', dest='shuffle', help='shuffle input data files each epoch', default=False)
     parser.add_argument('--clip_grads', action='store', type=float, dest='clip_grads', help='clip norm of gradient vector to val', default=0)

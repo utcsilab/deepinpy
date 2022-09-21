@@ -18,10 +18,9 @@ from torchvision.utils import make_grid
 from torch.optim import lr_scheduler 
 
 @torch.jit.script
-def calc_nrmse(gt, pred):
+def calc_nrmse(pred, gt):
     resid = pred - gt
     return (torch.real(opt.zdot_single_batch(resid)) / torch.real(opt.zdot_single_batch(gt))).sqrt().mean()
-
 
 class Recon(pl.LightningModule):
     """An abstract class for implementing system-model-optimization (SMO) constructions.
@@ -45,9 +44,10 @@ class Recon(pl.LightningModule):
         self._build_data()
         self.scheduler = None
         self.log_dict = None
+        self.iter = 0
 
     def _init_hparams(self, hparams):
-        self.hparams = hparams
+        self.save_hyperparameters(hparams)
 
         #self._loss_fun = torch.nn.MSELoss(reduction='sum')
 
@@ -56,13 +56,20 @@ class Recon(pl.LightningModule):
         else:
             self.loss_fun = self._loss_fun
 
-    def _loss_fun(self, pred, gt):
-        resid = pred - gt
-        #return torch.mean(torch.sum(torch.real(torch.conj(resid) * resid)))
-        return torch.mean(torch.real(opt.zdot_single_batch(resid)))
+    def _loss_fun(self, pred, gt, loss_type):  
+        if loss_type == 'L1':
+            return torch.mean(torch.reshape(torch.abs(pred - gt), (pred.shape[0], -1)).sum(1))
+        elif loss_type == 'L2':
+            return torch.mean(torch.real(opt.zdot_single_batch(pred - gt)))
+        elif loss_type == 'SSIM':
+            return utils.ssim_loss(pred, gt)
+        else:
+            raise ValueError('Invalid loss function, must be L2 (default), L1, or SSIM')
 
     def _build_data(self):
-        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
+        self.D = MultiChannelMRIDataset(data_file=self.hparams.data_train_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_train_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
+        if self.hparams.data_val_file:
+            self.V = MultiChannelMRIDataset(data_file=self.hparams.data_val_file, stdev=self.hparams.stdev, num_data_sets=self.hparams.num_val_data_sets, adjoint_data=self.hparams.adjoint_data, id=0, clear_cache=False, cache_data=False, scale_data=False, fully_sampled=self.hparams.fully_sampled, data_idx=None, inverse_crime=self.hparams.inverse_crime, noncart=self.hparams.noncart)
 
     def _abs_loss_fun(self, x_hat, imgs):
         x_hat_abs = torch.sqrt(x_hat.pow(2).sum(dim=-1))
@@ -114,6 +121,61 @@ class Recon(pl.LightningModule):
         except KeyError:
             pass
         return log_dict
+
+    def validation_step(self, batch, batch_idx):
+        """Used automatically in validation loop by pytorch lightning.
+        Returns a list of validation loss, NRMSE, and SSIM.
+
+        Args:
+            batch (tuple): Should hold the indices of data and the corresponding data, in said order.
+            batch_idx (None): Currently unimplemented.
+
+        Returns:
+            A list of validation loss, NRMSE, and SSIM.
+        """
+        if self.hparams.data_val_file:
+            idx, data = batch
+            imgs = data['imgs']
+            inp = data['out']
+
+            self.batch(data)
+            x_hat = self.forward(inp)
+
+            if self.hparams.self_supervised:
+                pred = self.A.forward(x_hat)
+                gt = inp
+            else:
+                pred = x_hat
+                gt = imgs
+
+            loss = self.loss_fun(pred, gt, self.hparams.loss_function)
+            NRMSE = calc_nrmse(pred, gt)
+            SSIM = 1 - utils.ssim_loss(pred, gt)
+            return [loss, NRMSE, SSIM]
+        else:
+            return 0
+
+    def validation_epoch_end(self, batch_parts):
+        """Logs validation loss, NRMSE, and SSIM to tensorboard. Called automatically by pytorch lightning.
+
+        Args:
+            batch_parts (Tensor): concatenation of validation_step outputs over all validation data.
+        """
+        self.logger.experiment.add_scalar(
+            'val_loss',
+            torch.mean(torch.stack([i[1] for i in batch_parts])),
+            self.global_step,
+        )
+        self.logger.experiment.add_scalar(
+            'val_nrmse',
+            torch.mean(torch.stack([i[1] for i in batch_parts])),
+            self.global_step,
+        )
+        self.logger.experiment.add_scalar(
+            'val_ssim',
+            torch.mean(torch.stack([i[2] for i in batch_parts])),
+            self.global_step,
+        )
 
     # FIXME: batch_nb parameter appears unused.
     def training_step(self, batch, batch_nb):
@@ -199,7 +261,7 @@ class Recon(pl.LightningModule):
             pred = x_hat
             gt = imgs
 
-        loss = self.loss_fun(pred, gt)
+        loss = self.loss_fun(pred, gt, self.hparams.loss_function)
 
         _loss = loss.clone().detach().requires_grad_(False)
         try:
@@ -207,15 +269,15 @@ class Recon(pl.LightningModule):
         except:
             _lambda = 0
         _epoch = self.current_epoch
-        _nrmse = calc_nrmse(imgs, x_hat).detach().requires_grad_(False)
-
+        _nrmse = calc_nrmse(pred, gt).detach().requires_grad_(False)
+        _ssim = 1 - utils.ssim_loss(pred, gt)
 
         log_dict = {
                 'lambda': _lambda,
                 'train_loss': _loss,
                 'epoch': self.current_epoch,
-                'nrmse': _nrmse, 
-                'val_loss': 0.,
+                'train_nrmse': _nrmse, 
+                'train_ssim': _ssim, 
                 }
 
         # FIXME: let the user specify this list
@@ -269,3 +331,13 @@ class Recon(pl.LightningModule):
         """
 
         return torch.utils.data.DataLoader(self.D, batch_size=self.hparams.batch_size, shuffle=self.hparams.shuffle, num_workers=0, drop_last=True)
+
+    def val_dataloader(self):
+        """Creates a DataLoader object, with distributed training if specified in the hyperparameters.
+
+        Returns:
+            A PyTorch DataLoader that has been configured according to the hyperparameters.
+        """
+        if self.hparams.data_val_file:
+            return torch.utils.data.DataLoader(self.V, batch_size=self.hparams.batch_size, shuffle=self.hparams.shuffle, num_workers=0, drop_last=True)
+        return None

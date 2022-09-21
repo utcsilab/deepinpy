@@ -6,4 +6,4 @@ A Forward object takes an input image x and returns measurements y
 """
 
 from .mcmri.mcmri import MultiChannelMRI, fft_forw, fft_adj
-from .mcmri.dataset import MultiChannelMRIDataset
+from .mcmri.dataset import MultiChannelMRIDataset, load_inference_data
