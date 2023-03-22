@@ -176,10 +176,10 @@ def load_data(idx, data_file, gen_masks=False):
             noise = None
 
     # special case for batch_size=1
-    if len(masks.shape) == 2:
-        imgs, maps, masks = imgs[None,...], maps[None,...], masks[None,...]
-        if noise is not None:
-            noise = noise[None,...]
+    #if len(masks.shape) == 2:
+    imgs, maps, masks = imgs[None,...], maps[None,...], masks[None,...]
+    if noise is not None:
+        noise = noise[None,...]
     return imgs, maps, masks, noise
 
 def load_data_ksp(idx, data_file, gen_masks=False):
@@ -194,10 +194,10 @@ def load_data_ksp(idx, data_file, gen_masks=False):
             noise = None
 
     # special case for batch_size=1
-    if len(masks.shape) == 2:
-        imgs, maps, masks, ksp = imgs[None,...], maps[None,...], masks[None,...], ksp[None,...]
-        if noise is not None:
-            noise = noise[None,...]
+    #if len(masks.shape) == 2:
+    imgs, maps, masks, ksp = imgs[None,...], maps[None,...], masks[None,...], ksp[None,...]
+    if noise is not None:
+        noise = noise[None,...]
     return imgs, maps, masks, ksp, noise
 
 
