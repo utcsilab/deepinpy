@@ -270,14 +270,14 @@ class Recon(pl.LightningModule):
             _lambda = 0
         _epoch = self.current_epoch
         _nrmse = calc_nrmse(pred, gt).detach().requires_grad_(False)
-        _ssim = 1 - utils.ssim_loss(pred, gt)
+        #_ssim = 1 - utils.ssim_loss(pred, gt)
 
         log_dict = {
                 'lambda': _lambda,
                 'train_loss': _loss,
                 'epoch': self.current_epoch,
                 'train_nrmse': _nrmse, 
-                'train_ssim': _ssim, 
+                #'train_ssim': _ssim, 
                 }
 
         # FIXME: let the user specify this list
