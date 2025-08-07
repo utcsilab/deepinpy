@@ -1,8 +1,8 @@
 {
 	"random_seed": 723,
-	"data_file": "deepinpy/tests/dataset_unittest.h5",
+	"data_train_file": "deepinpy/tests/dataset_unittest.h5",
 	"shuffle": true,
-	"num_data_sets": 10,
+	"num_train_data_sets": 10,
 	"name": "Hyperparam Opt",
 	"recon": "resnet",
 	"network": "ResNet",
